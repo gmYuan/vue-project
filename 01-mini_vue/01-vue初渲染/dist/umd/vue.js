@@ -85,6 +85,18 @@
       value: value
     });
   }
+  function proxy(vm, data, key) {
+    Object.defineProperty(vm, key, {
+      // vm.a
+      get: function get() {
+        return vm[data][key]; // vm._data.a
+      },
+      set: function set(newValue) {
+        // vm.a = 100;
+        vm[data][key] = newValue; // vm._data.a = 100;
+      }
+    });
+  }
 
   var Observer = /*#__PURE__*/function () {
     function Observer(value) {
@@ -175,8 +187,11 @@
   function initData(vm) {
     // 数据的初始化操作
     var data = vm.$options.data;
-    vm._data = data = typeof data == "function" ? data.call(vm) : data; // 数据的劫持方案 对象Object.defineProperty
-    // 数组 单独处理的
+    vm._data = data = typeof data == "function" ? data.call(vm) : data; // 当我去vm上取属性时 ，帮我将属性的取值代理到vm._data上
+
+    for (var key in data) {
+      proxy(vm, '_data', key);
+    }
 
     observe(data);
   }

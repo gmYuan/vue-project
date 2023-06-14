@@ -24,10 +24,22 @@
 				// return { a: [1,2,3]}
 
 				// 情况3: 数组里包含对象
+				// return { arr: [{a: 1}] }
+
+				// 情况3: 数组里包含对象
+				// return { arr: [{a: 1}] }
+
+				// 情况4: 数组里的push等新增成员包含对象
 				return { arr: [{a: 1}] }
 			},
 		});
+		
+		vm._data.arr.push({b: 2})
+		vm._data.arr[1].b = 100
 		console.log(vm._data)
+
+		// 情况5：通过代理，直接访问vm.arr
+		console.log('因为代理可以直接访问', vm.arr)
 	</script>
 
 </body>
