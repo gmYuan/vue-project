@@ -35,3 +35,17 @@ S4 数组新增的值可能还是一个 对象/数组类型，所以也需要对
   - ob.observeArray(inserted)
   - 因为要让数组类型值内部能调用到ob.observeArray方法，所以要在观测值value上定义 value.__ob__ = ob属性，从而让value也能访问到对应的ob对象
 > 即情况4: 数组里的push等新增成员包含对象
+
+
+S5 为了便于使用，Vue内部通过代理模式，在vm.dataKey时，实际访问的是vm._data.dataKey
+
+
+## 3 Vue的渲染流程
+
+S1 在Vue初始化过程中，会通过render函数==> 生成虚拟DOM
+  - 1 默认会先找render方法;
+  - 2 如果没有传入render方法，会去查找template==> render
+  - 3 如果还没有哦，就找当前el指定的元素中的内容==> 赋值给template
+
+S2 template内容==> compileToFunctions(template)==> 转化为render函数
+

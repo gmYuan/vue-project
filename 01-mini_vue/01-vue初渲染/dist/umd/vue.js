@@ -196,6 +196,47 @@
     observe(data);
   }
 
+  var ncname = "[a-zA-Z_][\\-\\.0-9_a-zA-Z]*"; // 标签名
+  // ?:匹配不捕获
+
+  var qnameCapture = "((?:".concat(ncname, "\\:)?").concat(ncname, ")"); // </my:xx>
+
+  var startTagOpen = new RegExp("^<".concat(qnameCapture)); // 标签开头的正则 捕获的内容是标签名
+  // 数据结构 树、栈、链表、队列、
+
+  var html = "";
+  function parseHTML(htmlContent) {
+    html = htmlContent; // 只要html不为空字符串就一直解析
+
+    while (html) {
+      // 尝试获取 "<" 字符
+      var textEnd = html.indexOf("<"); // 如果当前内容以"<" 字符开头，说明它肯定是一个标签（开始/结束标签）
+
+      if (textEnd == 0) {
+        // 尝试匹配是否是开始标签
+        var startTagMatch = parseStartTag();
+        break;
+      }
+    }
+  }
+
+  function parseStartTag() {
+    var start = html.match(startTagOpen);
+    console.log('ss', start);
+  }
+
+  //  <div id="app">hello {{name}} <span>world</span> <p></p></div>
+  function compileToFunctions(template) {
+    // html模板 => render函数  (ast是用来描述代码的)
+    // 1.需要将html代码转化成"ast"语法树 可以用ast树来描述语言本身
+    var ast = parseHTML(template); // 2.优化静态节点
+    // 3.通过这课树 重新的生成代码
+    // let code = generate(ast);
+    // 4.将字符串变成函数 限制取值范围 通过with来进行取值 稍后调用render函数就可以通过改变this 让这个函数内部取到结果了
+    // let render = new Function(`with(this){return ${code}}`);
+    // return render;
+  }
+
   function initMixin(Vue) {
     Vue.prototype._init = function (options) {
       var vm = this;
@@ -204,8 +245,34 @@
 
       initState(vm); // vue里面核心特性 响应式数据原理
       // Vue 是一个什么样的框架 MVVM
-      // 数据变化视图会更新，视图变化数据会被影响 
+      // 数据变化视图会更新，视图变化数据会被影响
       // （MVVM）不能跳过数据去更新视图，$ref
+      // 如果当前有el属性说明要渲染模板
+
+      if (vm.$options.el) {
+        vm.$mount(vm.$options.el);
+      }
+    };
+
+    Vue.prototype.$mount = function (el) {
+      // 挂载操作
+      var vm = this;
+      var options = vm.$options;
+      el = document.querySelector(el);
+
+      if (!options.render) {
+        // 没render 将template转化成render方法
+        var template = options.template;
+
+        if (!template && el) {
+          template = el.outerHTML;
+        } // 编译原理 将模板编译成render函数
+        // 渲染时用的都是这个render方法
+
+
+        var render = compileToFunctions(template);
+        options.render = render;
+      }
     };
   }
 
