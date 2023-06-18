@@ -42,10 +42,37 @@ S5 为了便于使用，Vue内部通过代理模式，在vm.dataKey时，实际�
 
 ## 3 Vue的渲染流程
 
-S1 在Vue初始化过程中，会通过render函数==> 生成虚拟DOM
+1 vm.$mount(vm.$options.el)
+  2 compileToFunctions(template)
+    3 parseHTML(template);
+      4.1 startTagMatch = parseStartTag()
+        5 设置并返回 mathchObj + advance(length)
+
+      4.2 start(mathc.tagName, match.attrs)
+
+S1 vm.$mount(el): 在Vue初始化过程中，会通过render函数==> 生成虚拟DOM
   - 1 默认会先找render方法;
   - 2 如果没有传入render方法，会去查找template==> render
-  - 3 如果还没有哦，就找当前el指定的元素中的内容==> 赋值给template
+  - 3 如果还没有，就找当前el指定的元素中的内容==> 赋值给template
+  - 调用 options.render = compileToFunctions(template)==> 通过template，生成render函数
 
-S2 template内容==> compileToFunctions(template)==> 转化为render函数
+S2 compileToFunctions(template)
+  - 把html字符串转化成 AST语法树==> ast = parseHTML(template)
 
+S3 parseHTML(template)
+  - 尝试匹配 标签的开始字符"<" ==> 
+    - 匹配成功==> 说明必然是开始或者结束 标签==>
+      - 尝试匹配和处理开始标签字符 startTagMatch = parseStartTag();
+      - 获取到startTagMatch后，如果存在结果==> start(tagName, attrs) + todo
+    - 匹配失败==> 说明必然不是标签 +  todo
+
+S4.1 parseStartTag()
+  - 尝试匹配开始标签的 开始字符和标签名称
+  - 匹配成功，说明是开始标签：
+    - 处理开始标签的 开始字符和标签名称，记做a==> 存入match.tagName + 删除a
+    - 只要没匹配到 开始标签的结束标签 + 存在属性b==> 存入match.attrs + 删除b
+    - 匹配到 开始标签的结束标签c==> 删除c + 返回match对象
+
+  - 匹配失败：说明不是开始标签：不处理默认返回undifined + todo
+
+S4.2 start(mathc.tagName, match.attrs)：todo

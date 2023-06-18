@@ -20,8 +20,13 @@ export function parseHTML(htmlContent) {
     let textEnd = html.indexOf("<");
     // 如果当前内容以"<" 字符开头，说明它肯定是一个标签（开始/结束标签）
     if (textEnd == 0) {
-      // 尝试匹配是否是开始标签
-      const startTagMatch = parseStartTag(); 
+      // 尝试匹配 是否是开始标签
+      const startTagMatch = parseStartTag();
+      if (startTagMatch) {
+        console.log('处理完开始标签的html--', html)
+        start(startTagMatch.tagName, startTagMatch.attrs);
+        // continue;
+      }
       break;
     }
   }
@@ -29,7 +34,44 @@ export function parseHTML(htmlContent) {
 
 function parseStartTag() {
   const start = html.match(startTagOpen);
-  console.log('ss', start)
+  // 如果start命中，说明是开始标签
   if (start) {
+    console.log('start', start)
+    const match = {
+      tagName: start[1],
+      attrs: [],
+    };
+    // 获取到 "<div" 里的div后，就删除开始标签("<div")
+    advance(start[0].length);
+    // console.log('html--', html)
+
+    // 如果直接是闭合标签了 说明没有属性
+    let end, attr;
+    // 不是结尾标签 && 能匹配到属性
+    while (
+      !(end = html.match(startTagClose)) &&
+      (attr = html.match(attribute))
+    ) {
+      // attrs的value,可能分别是正则匹配组的第3/4/5个索引值
+      match.attrs.push({ name: attr[1], value: attr[3] || attr[4] || attr[5] });
+      // 处理/缓存下了开始标签里的属性后，就去掉当前属性对应的 字符内容
+      advance(attr[0].length); 
+    }
+     // 如果匹配到开始标签的结束字符，就删除它 ">" + 返回开始标签的缓存对象
+    if (end) {
+      // console.log('end--', end)
+      advance(end[0].length);
+      return match;
+    }
   }
+}
+
+// 将字符串进行截取操作 在更新html内容
+function advance(n) {
+  html = html.substring(n);
+}
+
+// 创建一个元素 作为根元素
+function start(tagName, attrs) {
+  console.log('tagName--', tagName, attrs)
 }
