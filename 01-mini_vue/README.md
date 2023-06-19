@@ -44,7 +44,7 @@ S5 为了便于使用，Vue内部通过代理模式，在vm.dataKey时，实际�
 
 1 vm.$mount(vm.$options.el)
   2 compileToFunctions(template)
-    3 parseHTML(template) ==> 尝试匹配 标签的开始字符"<"
+    3-1 parseHTML(template) ==> 尝试匹配 标签的开始字符"<"
       3.1 首位置 匹配成功==> 说明当前 必然是开始/结束 标签
         4.1 startTagMatch = parseStartTag()
           5 设置并返回 mathchObj + advance(length)
@@ -54,6 +54,12 @@ S5 为了便于使用，Vue内部通过代理模式，在vm.dataKey时，实际�
         4.3 类似开始标签，尝试判断当前标签是 结束标签，如果存在endTagMatch==> end(tagName)
           
       3.2 首位置匹配失败==> 简化它必然是文本内容：chars(text);
+    
+    3-2 code = generate(ast)
+      - 通过ast树状节点关系，利用字符串拼接 拼接出 _c('div',{id:'app'}, _v('hello'+_s(name))）
+
+    3-3 render = new Function(`with(this){return ${code}}`)
+      - 通过 new Function + wit，从而构造出 render函数 + 内部变量值指向的是传入的this作用域
 
 S1 vm.$mount(el): 在Vue初始化过程中，会通过render函数==> 生成虚拟DOM
   - 1 默认会先找render方法;
@@ -83,5 +89,7 @@ S4.1 parseStartTag()
 
 S4.2 start(mathc.tagName, match.attrs)
   - 创建一个AST元素节点 + 如果没有根元素，就把它作为根元素
+  - 把创建的AST元素节点 放入栈内
 
 S4.3 end(tagName)
+  - 创建 AST结构的父子关系：element.parent + currentParent.children

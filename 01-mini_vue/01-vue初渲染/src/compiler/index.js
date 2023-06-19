@@ -1,5 +1,6 @@
 //  <div id="app">hello {{name}} <span>world</span> <p></p></div>
 import { parseHTML } from "./parse.js";
+import { generate } from "./generate";
 
 
 export function compileToFunctions(template) {
@@ -10,10 +11,13 @@ export function compileToFunctions(template) {
   // 2.优化静态节点
 
   // 3.通过这课树 重新的生成代码
-  // let code = generate(ast);
+  let code = generate(ast);
+  console.log('generateCode--', code)
 
-  // 4.将字符串变成函数 限制取值范围 通过with来进行取值 稍后调用render函数就可以通过改变this 让这个函数内部取到结果了
-  // let render = new Function(`with(this){return ${code}}`);
-  // return render;
+  // 4.将字符串变成函数 限制取值范围 通过with来进行取值 
+  // 稍后调用render函数就可以通过改变this 让这个函数内部取到结果了
+  let render = new Function(`with(this){return ${code}}`);
+  console.log('render--', render)
+  return render;
 
 }
