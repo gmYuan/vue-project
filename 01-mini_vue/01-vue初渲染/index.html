@@ -9,8 +9,11 @@
 
 <body>
 	<div id="app" style="color:red">
-		hello
-		<div id="my"> hello {{name}} <span>world</span> </div>
+		我是{{name}}，数组是{{arr}}
+		<div id="my">
+			我在{{info.school}}学习，
+			<span>我今年{{info.age}}岁了 </span> 
+		</div>
 	</div>
 
 	<script src="dist/umd/vue.js"></script>
@@ -37,11 +40,17 @@
 				// return { arr: [{a: 1}] }
 
 				// 情况4: 数组里的push等新增成员包含对象
-				return { arr: [{a: 1}] }
+				//return { arr: [{a: 1}] }
 
 				// 情况6: tempalte-->(AST)--> render
-				return { arr: [1,2,3 ],school:{name:'zf',age:10} }
+				//return { arr: [1,2,3 ],school:{name:'zf',age:10} }
 
+				// 情况7 生成真实dom数据
+				return {
+					name: 'xiaohu',
+					arr: [1,2,3],
+					info: {school: '哈哈小学', age: 10 }
+				}
 			},
 		});
 		// 情况4

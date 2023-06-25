@@ -40,7 +40,7 @@ S4 数组新增的值可能还是一个 对象/数组类型，所以也需要对
 S5 为了便于使用，Vue内部通过代理模式，在vm.dataKey时，实际访问的是vm._data.dataKey
 
 
-## 3 Vue的渲染流程
+## 3.1 Vue的渲染流程1==> template转化为render
 
 1 vm.$mount(vm.$options.el)
   2 compileToFunctions(template)
@@ -93,3 +93,31 @@ S4.2 start(mathc.tagName, match.attrs)
 
 S4.3 end(tagName)
   - 创建 AST结构的父子关系：element.parent + currentParent.children
+
+
+## 3.2 Vue的渲染流程2==> render生成vdom，再由vdom生成真实DOM
+
+1 整个Vue的index.js入口文件==> 
+  - 定义Vue函数
+  - 执行了各种Mixin插件，用于拓展Vue的原型对象
+    - initMixin: 定义了 Vue.prototype._init/Vue.prototype.$mount 等方法
+    - lifecycleMixin: 定义了Vue.prototype._update/ mountComponent 等方法
+    - renderMixin: 定义了Vue.prototype._c/Vue.prototype._render 等方法
+
+2 new Vue(options)==>
+  2.1 vm._init(): 定义于initMixin里==> 
+    3.1 initState(vm): 初始化props/data/methods等属性
+    3.2 vm.$mount(el): 实现 渲染和挂载流程
+      4.1 template==> render = compileToFunctions(template)
+      4.2 mountComponent(vm, el): render==>vdom==> 真实dom
+
+3 mountComponent(vm, el)
+  3-1 vdom = vm._render()
+    4-1 调用了vm.$options.render.call(vm)，从而返回vnode
+      - vm._c/vm._v/: 内部都是通过调用vnode，生成了虚拟节点
+  3-2 vm._update(vdom)
+    4-1 patch(vm.$el, vnode): vm.$el指向了el、
+      5-1 createElm(vnode): 通过vdom，生成真实dom
+        6 createElm生成div/文本等真实dom + 子节点递归调用createElm
+
+      5-2 获取旧的真实dom节点的 父dom + 插入新的真实dom + 删除旧的真实dom
