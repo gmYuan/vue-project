@@ -121,3 +121,25 @@ S4.3 end(tagName)
         6 createElm生成div/文本等真实dom + 子节点递归调用createElm
 
       5-2 获取旧的真实dom节点的 父dom + 插入新的真实dom + 删除旧的真实dom
+
+
+## 4 Vue.mixin(Vue.options)合并 + 生命周期钩子实现
+
+1 initGlobalApi(Vue): Vue除了原型方法，还定义了很多 静态方法
+  2 定义Vue.mixin(mixin): 调用 mergeOptions(this.options, mixin):
+    - 把全局Vue.options和 Vue.mixin等进行合并
+
+2 mergeOptions(parentObj, childObj)
+  - 2.1 一开始parentObj为空，所以直接执行childObj合并到parentObj上: 
+    - 3 mergeField(key): 根据不同key，采取不同对应的合并对象 策略
+      - 3.1 之前定义/注册了 策略模式strats[key] + 具体合并策略==> 对于生命周期[key]，都使用相同的合并策略：mergeHook(parent[key], child[key])
+        - 4 mergeHook(parentVal, childVal): 转化为数组拼接
+  - 2.2 后续parentObj不为空时，mergeField==>透传到mergeHook里实现数组拼接
+
+3 new Vue(options)==> vm._init(options)==> 
+  4.1 vm.$options = mergeOptions(vm.constructor.options, options): 合并构造函数的options和实例options，并更新到实例的$options上
+  4.2 callHook(vm, 'beforeCreate'): 在对应时间，执行合并好的生命周期钩子
+  4.3 initState(vm)/ vm.$mount(el)等.....
+
+
+

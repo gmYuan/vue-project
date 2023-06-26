@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+</head>
+
+<body>
+	<div id="app" style="color:red">
+		我是{{name}}，数组是{{arr}}
+		<div id="my">
+			我在{{info.school}}学习，
+			<span>我今年{{info.age}}岁了 </span> 
+		</div>
+	</div>
+
+	<script src="dist/umd/vue.js"></script>
+	<script>
+		
+		debugger
+		// 全局混入  Vue.options = { created: [a, b, c] }
+		Vue.mixin({ 
+			created: function a() {
+				console.log('全局混入- created A...')
+      }
+    })
+		Vue.mixin({ 
+			created: function b() {
+				console.log('全局混入- created B...')
+      }
+    })
+
+		// options Api 通过一个选项进行配置
+		let vm = new Vue({
+			// render(h) {
+			// 	return h('div', { id: 'a' }, 'hello')
+			// },
+			// template: '<div>hello world</div>'
+			el: '#app',
+
+			data() {
+				// 情况1: 对象嵌套
+				// return { a: { b: { c: 1} }}
+
+				// 情况2: 对象里包含数组类型
+				// return { a: [1,2,3]}
+
+				// 情况3: 数组里包含对象
+				// return { arr: [{a: 1}] }
+
+				// 情况3: 数组里包含对象
+				// return { arr: [{a: 1}] }
+
+				// 情况4: 数组里的push等新增成员包含对象
+				//return { arr: [{a: 1}] }
+
+				// 情况6: tempalte-->(AST)--> render
+				//return { arr: [1,2,3 ],school:{name:'zf',age:10} }
+
+				// 情况7 生成真实dom数据
+				return {
+					name: 'xiaohu',
+					arr: [1,2,3],
+					info: {school: '哈哈小学', age: 10 }
+				}
+			},
+			// 生命周期 就是回调函数， 先订阅好 后续会触发此方法
+			created() { 
+        console.log('实例内的 my created')
+      },
+		});
+
+
+		// 情况4
+		// vm._data.arr.push({b: 2})
+		// vm._data.arr[1].b = 100
+		// console.log(vm._data)
+
+		// 情况5：通过代理，直接访问vm.arr
+		// console.log('因为代理可以直接访问', vm.arr)
+	</script>
+
+</body>
+
+</html>
