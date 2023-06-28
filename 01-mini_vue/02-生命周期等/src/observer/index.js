@@ -1,5 +1,6 @@
 import { arrayMethods } from "./array";
 import { defineProperty } from "../util";
+import Dep from "./dep";
 
 class Observer {
   constructor(value) {
@@ -34,9 +35,15 @@ function defineReactive(data, key, value) {
   //注意点1: 嵌套对象的深层监测
   observe(value);
 
+  let dep = new Dep(); // 每个属性都有一个dep
+  //当页面取值时 说明这个值用来渲染了==> 将这个watcher和这个属性对应起来
   Object.defineProperty(data, key, {
     get() {
       console.log(`读取了: ${data}${key}`);
+      // debugger;
+      if (Dep.target) {
+        dep.depend();  // 让这个属性记住这个watcher
+      }
       return value;
     },
 
@@ -45,6 +52,8 @@ function defineReactive(data, key, value) {
       console.log(`准备设置新值了: ${data}${key}`);
       observe(newValue); // 如果用户将值改为对象继续监控
       value = newValue;
+
+      dep.notify(); // 更新操作
     },
   });
 }

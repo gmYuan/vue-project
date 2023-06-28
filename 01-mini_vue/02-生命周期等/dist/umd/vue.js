@@ -201,6 +201,41 @@
     return options;
   }
 
+  var id$1 = 0;
+
+  // dep和watcher是多对多的关系 1个属性就有一个dep，用来收集watcher
+  // 1个dep 可以存多个watcher
+  // 1个watcher可以对应 多个dep
+  var Dep = /*#__PURE__*/function () {
+    function Dep() {
+      _classCallCheck(this, Dep);
+      this.subs = [];
+      this.id = id$1++;
+    }
+    _createClass(Dep, [{
+      key: "depend",
+      value: function depend() {
+        this.subs.push(Dep.target);
+      }
+    }, {
+      key: "notify",
+      value: function notify() {
+        this.subs.forEach(function (watcher) {
+          return watcher.update();
+        });
+      }
+    }]);
+    return Dep;
+  }();
+  Dep.target = null; // 静态属性
+  function pushTarget(watcher) {
+    Dep.target = watcher; // 保留watcher
+  }
+
+  function popTarget() {
+    Dep.target = null; // 将变量删除掉
+  }
+
   var Observer = /*#__PURE__*/function () {
     function Observer(value) {
       _classCallCheck(this, Observer);
@@ -238,9 +273,16 @@
   function defineReactive(data, key, value) {
     //注意点1: 嵌套对象的深层监测
     observe(value);
+    var dep = new Dep(); // 每个属性都有一个dep
+    //当页面取值时 说明这个值用来渲染了==> 将这个watcher和这个属性对应起来
     Object.defineProperty(data, key, {
       get: function get() {
         console.log("\u8BFB\u53D6\u4E86: ".concat(data).concat(key));
+        // debugger;
+        if (Dep.target) {
+          dep.depend(); // 让这个属性记住这个watcher
+        }
+
         return value;
       },
       set: function set(newValue) {
@@ -248,9 +290,11 @@
         console.log("\u51C6\u5907\u8BBE\u7F6E\u65B0\u503C\u4E86: ".concat(data).concat(key));
         observe(newValue); // 如果用户将值改为对象继续监控
         value = newValue;
+        dep.notify(); // 更新操作
       }
     });
   }
+
   function observe(data) {
     if (_typeof(data) !== "object" || data == null) {
       return data;
@@ -313,7 +357,7 @@
         var startTagMatch = parseStartTag();
         if (startTagMatch) {
           start(startTagMatch.tagName, startTagMatch.attrs);
-          console.log("处理完开始标签的html--", html);
+          // console.log("处理完开始标签的html--", html);
           continue;
         }
         // 尝试匹配 是否是结束标签
@@ -321,7 +365,7 @@
         if (endTagMatch) {
           advance(endTagMatch[0].length);
           end(endTagMatch[1]); // 将结束标签传入
-          console.log("处理完结束标签的html--", html);
+          // console.log("处理完结束标签的html--", html);
           continue;
         }
       }
@@ -333,12 +377,12 @@
         // 处理文本
         advance(text.length);
         chars(text);
-        console.log("处理完文本类型的html--", html);
+        // console.log("处理完文本类型的html--", html);
       }
       // break;
     }
 
-    console.log('最后生成的AST树--', root);
+    // console.log('最后生成的AST树--', root)
     return root;
   }
 
@@ -496,7 +540,7 @@
       var lastIndex = defaultTagRE.lastIndex = 0; // 如果正则是全局模式 需要每次使用前置为0
       var match, index; // 每次匹配到的结果
       while (match = defaultTagRE.exec(text)) {
-        console.log('match--', match);
+        // console.log('match--', match)
         index = match.index; // 保存匹配到的索引
         // 存入变量文本前的 普通文本内容
         if (index > lastIndex) {
@@ -510,7 +554,7 @@
       if (lastIndex < text.length) {
         tokens.push(JSON.stringify(text.slice(lastIndex)));
       }
-      console.log('tokens--', tokens);
+      // console.log('tokens--', tokens)
       return "_v(".concat(tokens.join("+"), ")");
     }
   }
@@ -525,12 +569,13 @@
 
     // 3.通过这课树 重新的生成代码
     var code = generate(ast);
-    console.log('generateCode--', code);
+    // console.log('generateCode--', code)
 
     // 4.将字符串变成函数 限制取值范围 通过with来进行取值 
     // 稍后调用render函数就可以通过改变this 让这个函数内部取到结果了
     var render = new Function("with(this){return ".concat(code, "}"));
-    console.log('render--', render);
+    console.log('compileToFunctions里生成的render函数是--', render);
+    console.log('------------------------------------------');
     return render;
   }
 
@@ -542,8 +587,11 @@
     var parentElm = oldVnode.parentNode; // 获取老的app的父亲 => body
     parentElm.insertBefore(el, oldVnode.nextSibling); // 当前的真实元素插入到app的后面
     parentElm.removeChild(oldVnode); // 删除老的节点
+    console.log('el是---', el);
+    console.log('------------------------------------');
+    // debugger
+    return el;
   }
-
   function createElm(vnode) {
     var tag = vnode.tag,
       children = vnode.children;
@@ -588,18 +636,66 @@
     }
   }
 
+  var id = 0;
+  // 在数据劫持的时候 定义defineProperty的时候 已经给每个属性都增加了一个dep
+  // 1.是想把这个渲染watcher 放到了Dep.target属性上
+  // 2.开始渲染 取值会调用get方法,需要让这个属性的dep 存储当前的watcher
+  // 3.页面上所需要的属性都会将这个watcher存在自己的dep中
+  // 4.等会属性更新了 就重新调用渲染逻辑 通知自己存储的watcher来更新
+  var Watcher = /*#__PURE__*/function () {
+    // vm: 实例  exprOrFn: vm._update(vm._render())
+    function Watcher(vm, exprOrFn, cb, options) {
+      _classCallCheck(this, Watcher);
+      this.vm = vm;
+      this.exprOrFn = exprOrFn;
+      this.cb = cb;
+      this.options = options;
+      this.id = id++; // watcher的唯一标识
+      // 设置this.getter引用
+      if (typeof exprOrFn == "function") {
+        this.getter = exprOrFn;
+      }
+      this.get(); // 默认会调用1次get方法，用于进行初次和渲染
+    }
+    _createClass(Watcher, [{
+      key: "get",
+      value: function get() {
+        // Dep.target = watcher
+        pushTarget(this); // 当前watcher实例
+        this.getter();
+        popTarget(); //渲染完成后 将watcher删掉了
+      }
+    }, {
+      key: "update",
+      value: function update() {
+        this.get(); // 重新渲染
+      }
+    }]);
+    return Watcher;
+  }();
+
   function lifecycleMixin(Vue) {
     Vue.prototype._update = function (vnode) {
       var vm = this;
-      patch(vm.$el, vnode);
+      // debugger
+
+      // 用新的创建的元素 替换老的vm.$el
+      vm.$el = patch(vm.$el, vnode);
     };
   }
   function mountComponent(vm, el) {
-    callHook(vm, 'beforeMount');
+    callHook(vm, "beforeMount");
 
     // 先调用render方法创建虚拟节点，再将虚拟节点渲染到页面上
-    vm._update(vm._render());
-    callHook(vm, 'mounted');
+    var updateComponent = function updateComponent() {
+      vm._update(vm._render());
+    };
+
+    // 初始化就会创建 渲染watcher==> 要把属性 和 watcher 绑定在一起
+    new Watcher(vm, updateComponent, function () {
+      callHook(vm, "beforeUpdate");
+    }, true);
+    callHook(vm, "mounted");
   }
   function callHook(vm, hook) {
     // vm.$options.created  = [a1,a2,a3]
@@ -642,6 +738,8 @@
       var options = vm.$options;
       el = document.querySelector(el);
       vm.$el = el;
+      // debugger
+
       if (!options.render) {
         // 没render 将template转化成render方法
         var template = options.template;
@@ -664,7 +762,8 @@
       var vm = this;
       var render = vm.$options.render;
       var vnode = render.call(vm);
-      console.log('vdom/vnode结构是--', vnode);
+      console.log('render函数是--', render);
+      console.log('render函数生成的vdom是--', vnode);
       return vnode;
     };
 

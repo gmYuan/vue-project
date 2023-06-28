@@ -59,7 +59,7 @@ function gen(node) {
     let lastIndex = (defaultTagRE.lastIndex = 0); // 如果正则是全局模式 需要每次使用前置为0
     let match, index; // 每次匹配到的结果
     while ((match = defaultTagRE.exec(text))) {
-			console.log('match--', match)
+			// console.log('match--', match)
       index = match.index; // 保存匹配到的索引
 			// 存入变量文本前的 普通文本内容
       if (index > lastIndex) {
@@ -73,7 +73,7 @@ function gen(node) {
     if (lastIndex < text.length) {
       tokens.push(JSON.stringify(text.slice(lastIndex)));
     }
-		console.log('tokens--', tokens)
+		// console.log('tokens--', tokens)
     return `_v(${tokens.join("+")})`;
   }
 }

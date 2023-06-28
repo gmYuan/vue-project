@@ -142,4 +142,35 @@ S4.3 end(tagName)
   4.3 initState(vm)/ vm.$mount(el)等.....
 
 
+## 5 响应式实现2：数据更新后自动重渲染页面
+
+1 修复更新响应式数据值后，调用vm._update(vnode)==> patch(vm.$el, vnode)时 vm.$el报错：
+  - 原因是vm.$el是在vm._init(options)==> vm.$mount(el)时生成的，它只会执行1次，保留了对一开始div#app的初始化时引用，但是在后续执行 mountComponent(vm, el)==> vm._update(vm._render())==> patch(vm.$el, vnode)内部，会在生成真实dom后，删除oldVnode，即 div#app节点
+
+  - 因此在后续跟新时，vm.$el保留的还是旧的 div#app节点的引用，但实际上它已经被删除了，导致报错
+
+  - 解决方法是每次执行patch后,都把新生成的真实dom-el元素返回，并赋值给vm.$el
+
+2 实现响应式更新：数据更新后自动重渲染页面
+  S1 new Vue(options)==> vue.constructor(options)==> v._init(options)==> vm.$mount(el)==> mountComponent(vm, el)
+  
+  S2 mountComponent() ==>  new Watcher()==> watcher.constructor()==> watcher.get()
+  
+  S3 watcher.get()==> 入栈/出栈 Dep.target + watcher.getter()（即exprOrFn）==> updateComponent()==>  vm._update(vm._render())==> render()内部 读取了响应式data的属性==> data.key的 getter拦截
+
+  S4 data.key的 getter拦截==>
+    - 每个key都会有一个 keyDep实例 
+    - Dep.target有值(watcher.get()时会入栈当前watcher)==> keyDep.depend()==> keyDep.subs.push(Dep.target)==> 页面上所有被读取/使用的属性，都会把渲染watcher存入自己的dep里
+   
+  S5 data.key被修改值==> data.key的 setter拦截==>
+    - 修改值前会先触发getter操作，但是由于watcher.getter 执行完成后，会让Dep.target出栈，导致不会再进行多余的 watcher收集
+    - observe(newValue) + keyDep.notify()==> watcherX.update()==> watcher.get()重新执行渲染逻辑，从而更新页面
+    - 重新执行watcher.get()==> 再次触发S4的 getter操作==> keyDep.depend()==> 重复收集同一个watcher，所以后续要进行优化，从而避免对同一个watcher实例进行收集
+
+
+
+
+
+
+
 

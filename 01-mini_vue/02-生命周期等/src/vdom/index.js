@@ -3,7 +3,8 @@ export function renderMixin(Vue) {
     const vm = this;
     const render = vm.$options.render;
     let vnode = render.call(vm);
-    console.log('vdom/vnode结构是--', vnode);
+    console.log('render函数是--', render);
+    console.log('render函数生成的vdom是--', vnode);
     return vnode;
   }; 
 

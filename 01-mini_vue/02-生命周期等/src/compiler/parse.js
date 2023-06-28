@@ -29,7 +29,7 @@ export function parseHTML(htmlContent) {
       const startTagMatch = parseStartTag();
       if (startTagMatch) {
         start(startTagMatch.tagName, startTagMatch.attrs);
-        console.log("处理完开始标签的html--", html);
+        // console.log("处理完开始标签的html--", html);
         continue;
       }
       // 尝试匹配 是否是结束标签
@@ -37,7 +37,7 @@ export function parseHTML(htmlContent) {
       if (endTagMatch) {
         advance(endTagMatch[0].length);
         end(endTagMatch[1]); // 将结束标签传入
-        console.log("处理完结束标签的html--", html);
+        // console.log("处理完结束标签的html--", html);
         continue;
       }
     }
@@ -49,12 +49,12 @@ export function parseHTML(htmlContent) {
       // 处理文本
       advance(text.length);
       chars(text);
-      console.log("处理完文本类型的html--", html);
+      // console.log("处理完文本类型的html--", html);
     }
     // break;
   }
 
-  console.log('最后生成的AST树--', root)
+  // console.log('最后生成的AST树--', root)
   return root;
 }
 

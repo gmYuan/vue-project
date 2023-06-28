@@ -36,6 +36,7 @@ export function initMixin(Vue) {
     const options = vm.$options;
     el = document.querySelector(el);
     vm.$el = el;
+    // debugger
 
     if (!options.render) {
       // 没render 将template转化成render方法

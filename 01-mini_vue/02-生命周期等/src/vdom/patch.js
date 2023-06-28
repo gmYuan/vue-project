@@ -6,6 +6,10 @@ export function patch(oldVnode, vnode) {
   let parentElm = oldVnode.parentNode; // 获取老的app的父亲 => body
   parentElm.insertBefore(el, oldVnode.nextSibling); // 当前的真实元素插入到app的后面
   parentElm.removeChild(oldVnode); // 删除老的节点
+  console.log('el是---',el)
+  console.log('------------------------------------')
+  // debugger
+  return el
 }
 
 function createElm(vnode) {
