@@ -15,6 +15,9 @@ class Watcher {
     this.cb = cb;
     this.options = options;
     this.id = id++; // watcher的唯一标识
+    this.deps = []; // watcher记录有多少dep依赖他
+    this.depsId = new Set();
+
     // 设置this.getter引用
     if (typeof exprOrFn == "function") {
       this.getter = exprOrFn;
@@ -28,6 +31,17 @@ class Watcher {
     pushTarget(this); // 当前watcher实例
     this.getter();
     popTarget(); //渲染完成后 将watcher删掉了
+  }
+
+  addDep(dep) {
+    // debugger
+    let id = dep.id;
+    if (!this.depsId.has(id)) {
+      this.deps.push(dep);
+      this.depsId.add(id);
+      dep.addSub(this);
+    }
+    // debugger
   }
 
   update() {

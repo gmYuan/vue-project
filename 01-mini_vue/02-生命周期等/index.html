@@ -8,12 +8,33 @@
 </head>
 
 <body>
+	<!-- 渲染1：默认渲染 -->
+	<!-- 我是{{name}}，数组是{{arr}}
+	<div id="my">
+		我在{{info.school}}学习，
+		<span>我今年{{info.age}}岁了 </span> 
+	</div> -->
+
+	<!-- 渲染2: 响应式更新-watcher和dep去重 -->
+	<!-- {{info.school}}
+	{{info.school}} -->
+
+	<!-- 渲染3: 响应式更新-支持数组push等方法
+      key顺序是: name, money, arr, info		
+	  dep0- rootData
+      dep1- data_name
+	  dep2- data_money
+	  dep3- data.arr.__ob___  ==> S2 收集了watcher ==> 用于了push
+	  dep4- data.arr[3].__ob__
+	  dep5- data.arr[3]_val   ==> S3 收集了watcher
+	  dep6- data_arr          ==> S1 收集了watcher
+	  dep7- data.info.__ob__
+	  dep8- data_info.school
+	  ......
+	-->
+
 	<div id="app" style="color:red">
-		我是{{name}}，数组是{{arr}}
-		<div id="my">
-			我在{{info.school}}学习，
-			<span>我今年{{info.age}}岁了 </span> 
-		</div>
+		{{arr}}
 	</div>
 
 	<script src="dist/umd/vue.js"></script>
@@ -48,9 +69,6 @@
 				// 情况3: 数组里包含对象
 				// return { arr: [{a: 1}] }
 
-				// 情况3: 数组里包含对象
-				// return { arr: [{a: 1}] }
-
 				// 情况4: 数组里的push等新增成员包含对象
 				//return { arr: [{a: 1}] }
 
@@ -60,7 +78,8 @@
 				// 情况7 生成真实dom数据
 				return {
 					name: 'xiaohu',
-					arr: [1,2,3],
+					money: 10,
+					arr: [1,2,3, {val:4} ],
 					info: {school: '哈哈小学', age: 10 }
 				}
 			},
@@ -78,23 +97,30 @@
 		// 情况5：通过代理，直接访问vm.arr
 		// console.log('因为代理可以直接访问', vm.arr)
 
-		// 响应式数据更新后重渲染页面
+		// 情况8: 响应式数据更新后重渲染页面
 		setTimeout(() => {
-			vm.info.school = '乐乐中学'
+			// 8.1 
+			// 当一个对象的引用地址被重新赋值后，由于obj.newKey被观测 + 读取info时
+			//   会通过JSON.stringify深层遍历读取，从而可以让newKey有dep来存储
 
-			setTimeout(() => {
-				vm.info.school = '梦想大学'
-			}, 2000);
+			// vm.arr[3].val = 40  //有效，因为arr[3]是引用类型，在initState()时已经被劫持了
+			// vm.arr[0] = 100  //无效，arr[0]由于是基本类型无法被后续观测
+
+			// 8.2 
+			vm.arr.push(5)
+
+
+
+			// 情况7对应更新修改
+			// vm.info.school = '乐乐中学'
+			// setTimeout(() => {
+			// 	vm.info.school = '梦想大学'
+			// }, 2000);
 
 			// 响应式更新: 数据变化后，能自动调用 vm._update(vm._render())就可以了
 		  // vue更新策略是以组件为单位的，给每个组件都增加一个watcher==> 
 			//   属性变化后会再次调用这个watcher (渲染watcher)
-
-			// vm._update(vm._render());
 		}, 2000);
-
-
-
 
 	</script>
 

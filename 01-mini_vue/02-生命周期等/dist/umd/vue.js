@@ -110,10 +110,13 @@
       for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
         args[_key] = arguments[_key];
       }
+      // 当调用数组我们劫持后的这7个方法，页面应该更新：要知道数组对应哪个dep
       // this就是observer里的value
       var result = oldArrayProtoMethods[method].apply(this, args);
       var inserted;
       var ob = this.__ob__;
+      // debugger
+
       switch (method) {
         case "push": // arr.push({a:1},{b:2})
         case "unshift":
@@ -124,7 +127,11 @@
           // vue.$set原理
           inserted = args.slice(2);
       }
-      if (inserted) ob.observeArray(inserted); // 给数组新增的值也要进行观测
+
+      // debugger
+      // 注意点4：对通过数组方法新增的值，也需要进行观测每一项内容
+      if (inserted) ob.observeArray(inserted);
+      ob.dep.notify(); // 通知数组更新
       return result;
     };
   });
@@ -212,10 +219,17 @@
       this.subs = [];
       this.id = id$1++;
     }
+    // 实现watcher和dep的双向存储记忆
     _createClass(Dep, [{
       key: "depend",
       value: function depend() {
-        this.subs.push(Dep.target);
+        Dep.target.addDep(this);
+        // this.subs.push(Dep.target);
+      }
+    }, {
+      key: "addSub",
+      value: function addSub(watcher) {
+        this.subs.push(watcher);
       }
     }, {
       key: "notify",
@@ -237,16 +251,18 @@
   }
 
   var Observer = /*#__PURE__*/function () {
+    // 使用defineProperty 重新定义属性
     function Observer(value) {
       _classCallCheck(this, Observer);
-      // 使用defineProperty 重新定义属性
+      // debugger
+      this.dep = new Dep(); // value = {}  value = []
 
       // 判断一个对象是否被观测过看他有没有 __ob__这个属性
       defineProperty(value, "__ob__", this);
       if (Array.isArray(value)) {
         // 函数劫持/ 切片编程
         value.__proto__ = arrayMethods;
-        // 观测数组中的对象类型，对象变化也要做一些事
+        // 观测数组中的对象类型，对象变化也要做一些事，注意普通类型是不做观测的
         this.observeArray(value);
       } else {
         this.walk(value);
@@ -256,7 +272,8 @@
       key: "observeArray",
       value: function observeArray(value) {
         value.forEach(function (item) {
-          observe(item); // 观测数组中的对象类型
+          // 注意点2: 观测数组中的对象类型
+          observe(item);
         });
       }
     }, {
@@ -271,8 +288,9 @@
     return Observer;
   }();
   function defineReactive(data, key, value) {
-    //注意点1: 嵌套对象的深层监测
-    observe(value);
+    // debugger
+    //注意点1: 嵌套对象的深层监测/ 获取到数组对应的dep
+    var childDep = observe(value);
     var dep = new Dep(); // 每个属性都有一个dep
     //当页面取值时 说明这个值用来渲染了==> 将这个watcher和这个属性对应起来
     Object.defineProperty(data, key, {
@@ -281,6 +299,11 @@
         // debugger;
         if (Dep.target) {
           dep.depend(); // 让这个属性记住这个watcher
+          if (childDep) {
+            // 可能是数组可能是对象
+            // 默认给数组增加了一个dep属性，当对数组这个对象取值的时候
+            childDep.dep.depend(); // 数组存起来了这个渲染watcher
+          }
         }
 
         return value;
@@ -288,8 +311,11 @@
       set: function set(newValue) {
         if (newValue === value) return;
         console.log("\u51C6\u5907\u8BBE\u7F6E\u65B0\u503C\u4E86: ".concat(data).concat(key));
-        observe(newValue); // 如果用户将值改为对象继续监控
+        // debugger
+        //注意点3: 如果用户将值改为对象, 需要继续监控
+        observe(newValue);
         value = newValue;
+        // debugger;
         dep.notify(); // 更新操作
       }
     });
@@ -297,7 +323,7 @@
 
   function observe(data) {
     if (_typeof(data) !== "object" || data == null) {
-      return data;
+      return;
     }
     if (data.__ob__) {
       return data;
@@ -651,6 +677,9 @@
       this.cb = cb;
       this.options = options;
       this.id = id++; // watcher的唯一标识
+      this.deps = []; // watcher记录有多少dep依赖他
+      this.depsId = new Set();
+
       // 设置this.getter引用
       if (typeof exprOrFn == "function") {
         this.getter = exprOrFn;
@@ -664,6 +693,18 @@
         pushTarget(this); // 当前watcher实例
         this.getter();
         popTarget(); //渲染完成后 将watcher删掉了
+      }
+    }, {
+      key: "addDep",
+      value: function addDep(dep) {
+        // debugger
+        var id = dep.id;
+        if (!this.depsId.has(id)) {
+          this.deps.push(dep);
+          this.depsId.add(id);
+          dep.addSub(this);
+        }
+        // debugger
       }
     }, {
       key: "update",

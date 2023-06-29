@@ -9,8 +9,14 @@ class Dep {
     this.subs = [];
     this.id = id++;
   }
+  // 实现watcher和dep的双向存储记忆
   depend() {
-    this.subs.push(Dep.target); 
+    Dep.target.addDep(this);
+    // this.subs.push(Dep.target);
+  }
+
+  addSub(watcher) {
+    this.subs.push(watcher);
   }
 
   notify() {
@@ -28,5 +34,3 @@ export function popTarget() {
 }
 
 export default Dep;
-
-

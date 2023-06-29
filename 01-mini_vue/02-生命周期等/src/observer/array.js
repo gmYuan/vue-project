@@ -8,11 +8,12 @@ let methods = ["push", "pop", "shift", "unshift", "reverse", "sort", "splice"];
 
 methods.forEach((method) => {
   arrayMethods[method] = function (...args) {
+    // 当调用数组我们劫持后的这7个方法，页面应该更新：要知道数组对应哪个dep
     // this就是observer里的value
     const result = oldArrayProtoMethods[method].apply(this, args);
-
     let inserted;
     let ob = this.__ob__;
+    // debugger
 
     switch (method) {
       case "push": // arr.push({a:1},{b:2})
@@ -25,7 +26,11 @@ methods.forEach((method) => {
         break;
     }
     
-    if (inserted) ob.observeArray(inserted); // 给数组新增的值也要进行观测
+    // debugger
+    // 注意点4：对通过数组方法新增的值，也需要进行观测每一项内容
+    if (inserted) ob.observeArray(inserted); 
+
+    ob.dep.notify(); // 通知数组更新
     return result;
   };
 });

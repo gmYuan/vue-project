@@ -152,7 +152,16 @@ S4.3 end(tagName)
   - 解决方法是每次执行patch后,都把新生成的真实dom-el元素返回，并赋值给vm.$el
 
 2 实现响应式更新：数据更新后自动重渲染页面
-  S1 new Vue(options)==> vue.constructor(options)==> v._init(options)==> vm.$mount(el)==> mountComponent(vm, el)
+  S1 new Vue(options)==> vue.constructor(options)==> v._init(options)==> mergeOptions() + callHook() + initState(vm): 拦截了getter和setter的对象/数组==> vm.$mount(el)==> mountComponent(vm, el)
+    - initState()==>initData(data)==> observe(data)==> Observer.constructor()==> ob.dep + data.__ob__：(凡是引用类型：数组/对象，必定会有属于它的一个ob对象)==> defineReactive(data, key, val)==> childOb闭包 + keyDep闭包 + getter/setter拦截
+    
+    - observe(data)的作用：
+      - 定义data_key的keyDep闭包
+      - 定义 data.key那一层引用对象的childOb闭包(data.key.__ob__)
+      - 拦截data_key的 getter/setter
+
+    - dep的创建顺序：childObDep > data_key(深度优先遍历)
+    - dep收集watcher的顺序是：data_key(key_Dep) > data.key(childOb_Dep) + 
   
   S2 mountComponent() ==>  new Watcher()==> watcher.constructor()==> watcher.get()
   
@@ -160,13 +169,19 @@ S4.3 end(tagName)
 
   S4 data.key的 getter拦截==>
     - 每个key都会有一个 keyDep实例 
-    - Dep.target有值(watcher.get()时会入栈当前watcher)==> keyDep.depend()==> keyDep.subs.push(Dep.target)==> 页面上所有被读取/使用的属性，都会把渲染watcher存入自己的dep里
-   
+
+    - Dep.target有值(watcher.get()时会入栈当前watcher)==> keyDep.depend()==> watcher存储dep + dep存储watcher：为了避免存储重复的dep和watcher(当模板中多次读取data.key时)，需要在watcher入口通过depId的set来进行去重dep (dep去重后自然就会让依赖的dep存储watcher去重)==> 页面上所有被读取/使用的属性，都会把渲染watcher存入自己的dep里
+
   S5 data.key被修改值==> data.key的 setter拦截==>
     - 修改值前会先触发getter操作，但是由于watcher.getter 执行完成后，会让Dep.target出栈，导致不会再进行多余的 watcher收集
     - observe(newValue) + keyDep.notify()==> watcherX.update()==> watcher.get()重新执行渲染逻辑，从而更新页面
-    - 重新执行watcher.get()==> 再次触发S4的 getter操作==> keyDep.depend()==> 重复收集同一个watcher，所以后续要进行优化，从而避免对同一个watcher实例进行收集
+    - 重新执行watcher.get()==> 再次触发S4的 getter操作==> keyDep.depend()==> 
 
+      - 当一个对象obj的引用地址被重新赋值后，由于obj.newKey被观测 + 读取info时会通过JSON.stringify深层遍历读取，从而可以让newKey有dep来存储watcher，从而让其实现了后续的响应式渲染
+
+  S6 特殊的，当data.arr调用数组的push等7种原型方法时，不会触发setter拦截，且此时data.arr的keyDep虽然收集到了watcher依赖，但它只有在能被setter拦截时才能出发keyDep.notify()，所以需要特殊处理==> 在每个拦截对象的ob实例上，建立ob.dep==> 
+    - 当data.key为一个引用类型时，当访问data_key时，就同时会触发data_key_dep + data.key_childOb的 dep收集
+    - 在数组调用push后，调用ob.dep.notify()进行
 
 
 
