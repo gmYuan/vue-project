@@ -1,6 +1,8 @@
 import { initMixin } from "./init";
 import { lifecycleMixin } from "./lifecycle";
 import { renderMixin } from "./vdom/index";
+import { stateMixin } from './state';
+
 import { initGlobalApi } from './global-api/index';
 
 function Vue(options) {
@@ -11,6 +13,8 @@ function Vue(options) {
 initMixin(Vue);  // init方法
 lifecycleMixin(Vue);  // _update
 renderMixin(Vue);  // _render
+stateMixin(Vue);   // $nextTick()、$watch()等实现
+
 
 // 静态方法 Vue.component、Vue.directive、Vue.extend、Vue.mixin ...
 initGlobalApi(Vue);

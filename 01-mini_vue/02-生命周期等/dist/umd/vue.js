@@ -208,6 +208,52 @@
     return options;
   }
 
+  // nextTick相关
+  var callbacks = [];
+  var pending$1 = false;
+  function flushCallbacks() {
+    while (callbacks.length) {
+      var cb = callbacks.shift();
+      cb();
+    } // 让nextTick中传入的方法依次执行
+    pending$1 = false; // 标识已经执行完毕
+  }
+
+  // debugger
+  var timerFunc;
+  if (Promise) {
+    timerFunc = function timerFunc() {
+      Promise.resolve().then(flushCallbacks); // 异步处理更新
+    };
+  } else if (MutationObserver) {
+    // 可以监控dom变化,监控完毕后是异步更新
+    var observe$1 = new MutationObserver(flushCallbacks);
+    var textNode = document.createTextNode(1); // 先创建一个文本节点
+    observe$1.observe(textNode, {
+      characterData: true
+    }); // 观测文本节点中的内容
+    timerFunc = function timerFunc() {
+      textNode.textContent = 2; // 文中的内容改成2
+    };
+  } else if (setImmediate) {
+    timerFunc = function timerFunc() {
+      setImmediate(flushCallbacks);
+    };
+  } else {
+    timerFunc = function timerFunc() {
+      setTimeout(flushCallbacks);
+    };
+  }
+  function nextTick(cb) {
+    // 因为内部会调用nextTick 用户也会调用，但是异步只需要一次
+    callbacks.push(cb);
+    if (!pending$1) {
+      // vue3 里的nextTick原理就是promise.then 没有做兼容性处理了
+      timerFunc(); // 这个方法是异步方法 做了兼容处理了
+      pending$1 = true;
+    }
+  }
+
   var id$1 = 0;
 
   // dep和watcher是多对多的关系 1个属性就有一个dep，用来收集watcher
@@ -349,9 +395,16 @@
 
     // 当我去vm上取属性时 ，帮我将属性的取值代理到vm._data上
     for (var key in data) {
-      proxy(vm, '_data', key);
+      proxy(vm, "_data", key);
     }
     observe(data);
+  }
+
+  // stateMixin导出
+  function stateMixin(Vue) {
+    Vue.prototype.$nextTick = function (cb) {
+      nextTick(cb);
+    };
   }
 
   var ncname = "[a-zA-Z_][\\-\\.0-9_a-zA-Z]*"; // 标签名
@@ -709,11 +762,50 @@
     }, {
       key: "update",
       value: function update() {
-        this.get(); // 重新渲染
+        // 这里不要每次都调用get方法 get方法会重新渲染页面
+        queueWatcher(this); // 引入暂存的概念
+
+        // --------------- old -------------------------
+        // this.get(); // 重新渲染
+        // debugger
+        // console.log('触发了重渲染--')
+      }
+    }, {
+      key: "run",
+      value: function run() {
+        this.get(); // 渲染逻辑
       }
     }]);
     return Watcher;
-  }();
+  }(); // 将需要批量更新的watcher 存到一个队列中，稍后让watcher执行
+  var queue = [];
+  var has = {};
+  var pending = false;
+  function flushSchedulerQueue() {
+    queue.forEach(function (watcher) {
+      // debugger
+      watcher.run();
+      watcher.cb();
+    });
+    queue = [];
+    has = {};
+    pending = false;
+  }
+  function queueWatcher(watcher) {
+    var id = watcher.id; // 对watcher进行去重
+    debugger;
+    if (has[id] == null) {
+      queue.push(watcher); // 将watcher存到队列中
+      has[id] = true;
+      // 等待所有同步代码执行完毕后在执行
+      if (!pending) {
+        // 如果还没清空队列，就不要在开定时器了  防抖处理
+        // setTimeout(flushSchedulerQueue);
+        nextTick(flushSchedulerQueue);
+        pending = true;
+      }
+    }
+  }
 
   function lifecycleMixin(Vue) {
     Vue.prototype._update = function (vnode) {
@@ -734,7 +826,7 @@
 
     // 初始化就会创建 渲染watcher==> 要把属性 和 watcher 绑定在一起
     new Watcher(vm, updateComponent, function () {
-      callHook(vm, "beforeUpdate");
+      callHook(vm, "updated");
     }, true);
     callHook(vm, "mounted");
   }
@@ -862,6 +954,7 @@
   initMixin(Vue); // init方法
   lifecycleMixin(Vue); // _update
   renderMixin(Vue); // _render
+  stateMixin(Vue); // $nextTick()、$watch()等实现
 
   // 静态方法 Vue.component、Vue.directive、Vue.extend、Vue.mixin ...
   initGlobalApi(Vue);

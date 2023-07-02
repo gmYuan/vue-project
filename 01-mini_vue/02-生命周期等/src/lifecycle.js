@@ -22,7 +22,7 @@ export function mountComponent(vm, el) {
   // 初始化就会创建 渲染watcher==> 要把属性 和 watcher 绑定在一起
   let watcher = new Watcher(vm, updateComponent,
     () => {
-      callHook(vm, "beforeUpdate");
+      callHook(vm, "updated");
     },
     true
   ); 

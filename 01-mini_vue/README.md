@@ -184,6 +184,34 @@ S4.3 end(tagName)
     - 在数组调用push后，调用ob.dep.notify()进行
 
 
+## 6 响应式实现3：更新队列异步更新
+
+1 当前更新存在的问题：在同一个操作里进行多次更新，目前会出发多次wathcer.update操作==> 页面多次触发重渲染，性能低下
+
+2 解决方法：
+
+S1 dep.notify() ==> watcherX.update()==> queueWatcher(watcherX)
+  - 把watcherX 存入 watcher队列
+  - S2 nextTick(flushSchedulerQueue)
+  - 如果没执行完 flushSchedulerQueue，就不要在调用nextcick了==> 防抖
+
+S2 nextTick(flushSchedulerQueue)
+  - cbs.push(flushSchedulerQueue)
+  - timerFunc()==> flushCallbacks函数进入微任务队列
+
+  - 当pending为真，表示nextTick的cbs还未被清空，就不需要重复调用timerFunc()，让多个flushCallbacks进入微任务队列，因为在flushCallbacks内部，会清空掉nextTick存储的所有cbs==> 也是用于防抖
+
+S3 同步代码执行完成后，异步执行flushCallbacks()
+  - 取出nextTick的cbs队列里所有的cb,依次执行==>
+    - S4.1 flushSchedulerQueue() ==> watcherX.run()==> watcher.get()触发重渲染
+    - S4.2 用户定义的$nextTick(cb2)里的cb2()执行
+
+  - 重置nextTick的pending标识为false
+
+
+
+
+
 
 
 
