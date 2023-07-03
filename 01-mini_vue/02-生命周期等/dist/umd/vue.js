@@ -31,6 +31,27 @@
       return _arr;
     }
   }
+  function ownKeys(object, enumerableOnly) {
+    var keys = Object.keys(object);
+    if (Object.getOwnPropertySymbols) {
+      var symbols = Object.getOwnPropertySymbols(object);
+      enumerableOnly && (symbols = symbols.filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+      })), keys.push.apply(keys, symbols);
+    }
+    return keys;
+  }
+  function _objectSpread2(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = null != arguments[i] ? arguments[i] : {};
+      i % 2 ? ownKeys(Object(source), !0).forEach(function (key) {
+        _defineProperty(target, key, source[key]);
+      }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) {
+        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+      });
+    }
+    return target;
+  }
   function _typeof(obj) {
     "@babel/helpers - typeof";
 
@@ -61,6 +82,20 @@
       writable: false
     });
     return Constructor;
+  }
+  function _defineProperty(obj, key, value) {
+    key = _toPropertyKey(key);
+    if (key in obj) {
+      Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+      });
+    } else {
+      obj[key] = value;
+    }
+    return obj;
   }
   function _slicedToArray(arr, i) {
     return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
@@ -377,6 +412,121 @@
     return new Observer(data);
   }
 
+  var id = 0;
+  // 在数据劫持的时候 定义defineProperty的时候 已经给每个属性都增加了一个dep
+  // 1.是想把这个渲染watcher 放到了Dep.target属性上
+  // 2.开始渲染 取值会调用get方法,需要让这个属性的dep 存储当前的watcher
+  // 3.页面上所需要的属性都会将这个watcher存在自己的dep中
+  // 4.等会属性更新了 就重新调用渲染逻辑 通知自己存储的watcher来更新
+  var Watcher = /*#__PURE__*/function () {
+    // vm: 实例  exprOrFn: vm._update(vm._render())
+    function Watcher(vm, exprOrFn, cb, options) {
+      _classCallCheck(this, Watcher);
+      this.vm = vm;
+      this.exprOrFn = exprOrFn;
+      this.cb = cb;
+      this.options = options;
+      this.user = options.user; // 这是一个用户watcher
+
+      this.id = id++; // watcher的唯一标识
+      this.deps = []; // watcher记录有多少dep依赖他
+      this.depsId = new Set();
+      debugger;
+      // 设置this.getter引用
+      if (typeof exprOrFn == "function") {
+        this.getter = exprOrFn;
+      } else {
+        this.getter = function () {
+          // exprOrFn 可能传递过来的是一个字符串a
+          // 当去当前实例上取值时 才会触发依赖收集
+          var path = exprOrFn.split("."); // ['a','a','a']
+          var obj = vm;
+          for (var i = 0; i < path.length; i++) {
+            obj = obj[path[i]]; // vm.a --> vm.a.a
+          }
+
+          return obj;
+        };
+      }
+      this.get(); // 默认会调用1次get方法，用于进行初次和渲染
+    }
+    _createClass(Watcher, [{
+      key: "get",
+      value: function get() {
+        // Dep.target = watcher
+        pushTarget(this); // 当前watcher实例
+        // 调用exprOrFn==> render方法()==> 取值（执行了get方法）
+        var result = this.getter();
+        popTarget(); //渲染完成后 将watcher删掉了
+        return result;
+      }
+    }, {
+      key: "addDep",
+      value: function addDep(dep) {
+        // debugger
+        var id = dep.id;
+        if (!this.depsId.has(id)) {
+          this.deps.push(dep);
+          this.depsId.add(id);
+          dep.addSub(this);
+        }
+        // debugger
+      }
+    }, {
+      key: "update",
+      value: function update() {
+        // 这里不要每次都调用get方法 get方法会重新渲染页面
+        queueWatcher(this); // 引入暂存的概念
+
+        // --------------- old -------------------------
+        // this.get(); // 重新渲染
+        // debugger
+        // console.log('触发了重渲染--')
+      }
+    }, {
+      key: "run",
+      value: function run() {
+        var newValue = this.get(); // 渲染逻辑
+        var oldValue = this.value;
+        this.value = newValue; // 更新一下老值
+        if (this.user) {
+          this.cb.call(this.vm, newValue, oldValue);
+        }
+      }
+    }]);
+    return Watcher;
+  }(); // 将需要批量更新的watcher 存到一个队列中，稍后让watcher执行
+  var queue = [];
+  var has = {};
+  var pending = false;
+  function flushSchedulerQueue() {
+    queue.forEach(function (watcher) {
+      // debugger
+      watcher.run();
+      if (!watcher.user) {
+        watcher.cb();
+      }
+    });
+    queue = [];
+    has = {};
+    pending = false;
+  }
+  function queueWatcher(watcher) {
+    var id = watcher.id; // 对watcher进行去重
+    // debugger;
+    if (has[id] == null) {
+      queue.push(watcher); // 将watcher存到队列中
+      has[id] = true;
+      // 等待所有同步代码执行完毕后在执行
+      if (!pending) {
+        // 如果还没清空队列，就不要在开定时器了  防抖处理
+        // setTimeout(flushSchedulerQueue);
+        nextTick(flushSchedulerQueue);
+        pending = true;
+      }
+    }
+  }
+
   function initState(vm) {
     // vm.$options
     var opts = vm.$options;
@@ -386,7 +536,9 @@
       initData(vm);
     }
     if (opts.computed) ;
-    if (opts.watch) ;
+    if (opts.watch) {
+      initWatch(vm);
+    }
   }
   function initData(vm) {
     // 数据的初始化操作
@@ -399,11 +551,53 @@
     }
     observe(data);
   }
+  function initWatch(vm) {
+    debugger;
+    var watch = vm.$options.watch;
+    var _loop = function _loop(key) {
+      var handler = watch[key]; // handler可能是
+      if (Array.isArray(handler)) {
+        // 数组
+        handler.forEach(function (handle) {
+          createWatcher(vm, key, handle);
+        });
+      } else {
+        // 字符串\对象\函数
+        createWatcher(vm, key, handler);
+      }
+    };
+    for (var key in watch) {
+      _loop(key);
+    }
+  }
+  function createWatcher(vm, exprOrFn, handler, options) {
+    // options 可以用来标识 是用户watcher
+    if (_typeof(handler) == "object") {
+      options = handler;
+      handler = handler.handler; // 是一个函数
+    }
+
+    if (typeof handler == "string") {
+      handler = vm[handler]; // 将实例的方法作为handler
+    }
+    // key + handler: 用户传入的选项
+    return vm.$watch(exprOrFn, handler, options);
+  }
 
   // stateMixin导出
   function stateMixin(Vue) {
     Vue.prototype.$nextTick = function (cb) {
       nextTick(cb);
+    };
+    Vue.prototype.$watch = function (exprOrFn, cb) {
+      var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+      // 数据应该依赖这个watcher  数据变化后应该让watcher从新执行
+      new Watcher(this, exprOrFn, cb, _objectSpread2(_objectSpread2({}, options), {}, {
+        user: true
+      }));
+      if (options.immediate) {
+        cb(); // 如果是immdiate应该立刻执行
+      }
     };
   }
 
@@ -711,98 +905,6 @@
         el.className = el["class"];
       } else {
         el.setAttribute(key, newProps[key]);
-      }
-    }
-  }
-
-  var id = 0;
-  // 在数据劫持的时候 定义defineProperty的时候 已经给每个属性都增加了一个dep
-  // 1.是想把这个渲染watcher 放到了Dep.target属性上
-  // 2.开始渲染 取值会调用get方法,需要让这个属性的dep 存储当前的watcher
-  // 3.页面上所需要的属性都会将这个watcher存在自己的dep中
-  // 4.等会属性更新了 就重新调用渲染逻辑 通知自己存储的watcher来更新
-  var Watcher = /*#__PURE__*/function () {
-    // vm: 实例  exprOrFn: vm._update(vm._render())
-    function Watcher(vm, exprOrFn, cb, options) {
-      _classCallCheck(this, Watcher);
-      this.vm = vm;
-      this.exprOrFn = exprOrFn;
-      this.cb = cb;
-      this.options = options;
-      this.id = id++; // watcher的唯一标识
-      this.deps = []; // watcher记录有多少dep依赖他
-      this.depsId = new Set();
-
-      // 设置this.getter引用
-      if (typeof exprOrFn == "function") {
-        this.getter = exprOrFn;
-      }
-      this.get(); // 默认会调用1次get方法，用于进行初次和渲染
-    }
-    _createClass(Watcher, [{
-      key: "get",
-      value: function get() {
-        // Dep.target = watcher
-        pushTarget(this); // 当前watcher实例
-        this.getter();
-        popTarget(); //渲染完成后 将watcher删掉了
-      }
-    }, {
-      key: "addDep",
-      value: function addDep(dep) {
-        // debugger
-        var id = dep.id;
-        if (!this.depsId.has(id)) {
-          this.deps.push(dep);
-          this.depsId.add(id);
-          dep.addSub(this);
-        }
-        // debugger
-      }
-    }, {
-      key: "update",
-      value: function update() {
-        // 这里不要每次都调用get方法 get方法会重新渲染页面
-        queueWatcher(this); // 引入暂存的概念
-
-        // --------------- old -------------------------
-        // this.get(); // 重新渲染
-        // debugger
-        // console.log('触发了重渲染--')
-      }
-    }, {
-      key: "run",
-      value: function run() {
-        this.get(); // 渲染逻辑
-      }
-    }]);
-    return Watcher;
-  }(); // 将需要批量更新的watcher 存到一个队列中，稍后让watcher执行
-  var queue = [];
-  var has = {};
-  var pending = false;
-  function flushSchedulerQueue() {
-    queue.forEach(function (watcher) {
-      // debugger
-      watcher.run();
-      watcher.cb();
-    });
-    queue = [];
-    has = {};
-    pending = false;
-  }
-  function queueWatcher(watcher) {
-    var id = watcher.id; // 对watcher进行去重
-    debugger;
-    if (has[id] == null) {
-      queue.push(watcher); // 将watcher存到队列中
-      has[id] = true;
-      // 等待所有同步代码执行完毕后在执行
-      if (!pending) {
-        // 如果还没清空队列，就不要在开定时器了  防抖处理
-        // setTimeout(flushSchedulerQueue);
-        nextTick(flushSchedulerQueue);
-        pending = true;
       }
     }
   }

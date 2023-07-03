@@ -209,6 +209,22 @@ S3 同步代码执行完成后，异步执行flushCallbacks()
   - 重置nextTick的pending标识为false
 
 
+## 7 实现 $watcher/watch: {}
+
+1 watch: {} 入口：initWatch(vm)==> new Watcher()
+
+S1 new Vue(options)==> vue.constructor(options)==> vm._init(options)==> mergeOptions() + callHook() + initState(vm)==> initData(vm) + initWatch(vm)
+
+S2 initWatch(vm)==> createWatcher(vm, exprOrFn, handler, options)==> vm.$watch(exprOrFn, cb, options)==> new Watcher(vm, exprOrFn, cb, options)
+
+S3 new Watcher()==> 定义watcher.getter为函数 + watcher.get() ==> 调用watcher.getter()==> 触发对象的getter拦截==> keyDep+valueDep收集watcher依赖==> 可选的立刻执行cb() 
+
+
+2 渲染watcher入口：基本同上
+
+S1 ....==>  vm._init(options)==> vm.$mount(el)==> compileToFunctions() +  mountComponent(vm, el) ==> 
+
+S2 mountComponent() ==> callHook() + new Watcher(vm, updateComponent, hook) ==> 基本同上
 
 
 

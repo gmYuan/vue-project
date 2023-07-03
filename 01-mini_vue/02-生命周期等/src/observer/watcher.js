@@ -15,13 +15,27 @@ class Watcher {
     this.exprOrFn = exprOrFn;
     this.cb = cb;
     this.options = options;
+    this.user = options.user; // 这是一个用户watcher
+
     this.id = id++; // watcher的唯一标识
     this.deps = []; // watcher记录有多少dep依赖他
     this.depsId = new Set();
 
+    debugger
     // 设置this.getter引用
     if (typeof exprOrFn == "function") {
       this.getter = exprOrFn;
+    } else {
+      this.getter = function () {
+        // exprOrFn 可能传递过来的是一个字符串a
+        // 当去当前实例上取值时 才会触发依赖收集
+        let path = exprOrFn.split("."); // ['a','a','a']
+        let obj = vm;
+        for (let i = 0; i < path.length; i++) {
+          obj = obj[path[i]]; // vm.a --> vm.a.a
+        }
+        return obj;
+      };
     }
 
     this.get(); // 默认会调用1次get方法，用于进行初次和渲染
@@ -30,8 +44,10 @@ class Watcher {
   get() {
     // Dep.target = watcher
     pushTarget(this); // 当前watcher实例
-    this.getter();
+    // 调用exprOrFn==> render方法()==> 取值（执行了get方法）
+    let result = this.getter();
     popTarget(); //渲染完成后 将watcher删掉了
+    return result;
   }
 
   addDep(dep) {
@@ -57,7 +73,12 @@ class Watcher {
 
   run() {
     let newValue = this.get(); // 渲染逻辑
-}
+    let oldValue = this.value;
+    this.value = newValue; // 更新一下老值
+    if (this.user) {
+      this.cb.call(this.vm, newValue, oldValue);
+    }
+  }
 }
 
 // 将需要批量更新的watcher 存到一个队列中，稍后让watcher执行
@@ -69,7 +90,9 @@ function flushSchedulerQueue() {
   queue.forEach((watcher) => {
     // debugger
     watcher.run();
-    watcher.cb();
+    if (!watcher.user) {
+      watcher.cb();
+    }
   });
   queue = [];
   has = {};
@@ -78,7 +101,7 @@ function flushSchedulerQueue() {
 
 function queueWatcher(watcher) {
   const id = watcher.id; // 对watcher进行去重
-  debugger
+  // debugger;
   if (has[id] == null) {
     queue.push(watcher); // 将watcher存到队列中
     has[id] = true;
