@@ -227,9 +227,20 @@ S1 ....==>  vm._init(options)==> vm.$mount(el)==> compileToFunctions() +  mountC
 S2 mountComponent() ==> callHook() + new Watcher(vm, updateComponent, hook) ==> 基本同上
 
 
+## 8.1 实现 dom-diff1- 比较vnode中的 当前节点
 
+1 dom-diff的入口: pathch(oldVnode, vnode)
 
+  S1 render1 = compileToFunctions(template1)==> vnode1 = render1.call(vm) ==> dom1 = createElm(vnode1)
 
+  S2 ..... ==> vnode2 = render2.call(vm2) ==> patch(vnode1,vnode2)
+
+2 初次渲染时(oldVnode.nodeType === 1): createElm(vnode) + 替换插入body中
+
+3 更新dom时: 
+  - 比较两个元素的标签, 标签不一样: 直接替换为新的dom即可(同层标签类型比较)
+  - 处理文本节点: 更新文本内容即可
+  - 标签类型一样 + 非文本节点: 复用旧有dom节点dom1 + 更新dom1的属性为新vnode的属性
 
 
 

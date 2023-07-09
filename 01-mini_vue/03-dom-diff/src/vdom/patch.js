@@ -11,13 +11,52 @@ export function patch(oldVnode, vnode) {
     // debugger
     return el;
   } else {
-    
-    console.log('patch999-----', oldVnode, vnode)
-    // 在更新的时 拿老的虚拟节点 和 新的虚拟节点做对比 
-    // 将不同的地方更新真实的dom
+    console.log("patch999-----", oldVnode, vnode);
+    // 在更新的时 拿老的虚拟节点 和 新的虚拟节点做对比
+    // 对于不同的地方 更新真实的dom
 
+    // 1.比较两个元素的标签 ，标签不一样直接替换掉即可
+    if (oldVnode.tag !== vnode.tag) {
+      // 老的dom元素
+      return oldVnode.el.parentNode.replaceChild(createElm(vnode), oldVnode.el);
+    }
 
+    // 2.有种可能是标签一样 1 <==> 2
+    //  文本节点的虚拟节点tag 都是undefined==> 处理文本节点
+    if (!oldVnode.tag) {
+      if (oldVnode.text !== vnode.text) {
+        return (oldVnode.el.textContent = vnode.text);
+      }
+    }
+
+    // 3.标签一样 并且需要开始比对标签的属性 和 儿子了
+    // 标签一样直接复用即可
+    let el = (vnode.el = oldVnode.el); // 复用老节点
+
+    // 更新属性，用新的虚拟节点的属性和老的比较，去更新节点
+    // 新老属性做对比
+    updateProperties(vnode, oldVnode.data);
+
+    // 比较孩子节点
+    /** 
+    let oldChildren = oldVnode.children || [];
+    let newChildren = vnode.children || [];
+
+    if (oldChildren.length > 0 && newChildren.length > 0) {
+      // 老的有儿子 新的也有儿子  diff 算法
+      // updateChildren(oldChildren, newChildren, el);
+    } else if (oldChildren.length > 0) {   // 新的没有 + 老的有
+      el.innerHTML = "";
+    } else if (newChildren.length > 0) {  // 新的有 +  老的没有
+      for (let i = 0; i < newChildren.length; i++) {
+        let child = newChildren[i];
+        // 浏览器有性能优化 不用自己在搞文档碎片了
+        el.appendChild(createElm(child));
+      }
+    }
+    */
   }
+ 
 }
 
 export function createElm(vnode) {
@@ -44,9 +83,26 @@ export function createElm(vnode) {
 //  先初始化数据==> 将模板进行编译==> render函数==>
 //  生成虚拟节点==> 生成真实的dom==> 渲染到页面上
 
-function updateProperties(vnode) {
+function updateProperties(vnode, oldProps = {}) {
   let el = vnode.el;
   let newProps = vnode.data || {};
+  // 老的有 + 新的没有，需要删除属性
+  for (let key in oldProps) {
+    if (!newProps[key]) {
+      el.removeAttribute(key); // 移除真实dom的属性
+    }
+  }
+  // 样式处理  老的 style={color:red}  新的 style={background:red}
+  let newStyle = newProps.style || {};
+  let oldStyle = oldProps.style || {};
+  // 老的样式中有 + 新的没有， 删除老的样式
+  for (let key in oldStyle) {
+    if (!newStyle[key]) {
+      el.style[key] = "";
+    }
+  }
+
+  // 新的有 那就直接用新的去做更新即可
   for (let key in newProps) {
     if (key == "style") {
       // {color:red}
@@ -54,7 +110,8 @@ function updateProperties(vnode) {
         el.style[styleName] = newProps.style[styleName];
       }
     } else if (key == "class") {
-      el.className = el.class;
+      // el.className = el.class;
+      el.className = newProps.class;
     } else {
       el.setAttribute(key, newProps[key]);
     }

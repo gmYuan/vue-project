@@ -25,18 +25,21 @@ import {compileToFunctions} from './compiler/index';
 import {createElm,patch} from './vdom/patch'
 
 let vm1 = new Vue({data:{name:'zf'}});
-let render1 = compileToFunctions('<div id="a">{{name}}</div>');
+let render1 = compileToFunctions('<div id="a" style="color: red" class="a">{{name}}</div>');
 let vnode1 = render1.call(vm1); // render方法返回的是虚拟dom
 
 document.body.appendChild(createElm(vnode1))
 
 
 let vm2 = new Vue({data:{name:'jg'}});
-let render2 = compileToFunctions('<div id="b">{{name}}</div>');
+let render2 = compileToFunctions('<div id="b" style="background: yellow" class="b">{{name}}</div>');
 let vnode2 = render2.call(vm2);
 
 // 用新的虚拟节点对比老的虚拟节点，找到差异 去更新老的dom元素
-patch(vnode1,vnode2); // 传入新的虚拟节点和老的 做一个对比
+setTimeout(() => {
+  patch(vnode1,vnode2); // 传入新的虚拟节点和老的 做一个对比
+}, 2000);
+
 
 
 
