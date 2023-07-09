@@ -25,14 +25,35 @@ import {compileToFunctions} from './compiler/index';
 import {createElm,patch} from './vdom/patch'
 
 let vm1 = new Vue({data:{name:'zf'}});
-let render1 = compileToFunctions('<div id="a" style="color: red" class="a">{{name}}</div>');
+// S1 比较同级节点
+// let render1 = compileToFunctions('<div id="a" style="color: red" class="a">{{name}}</div>');
+
+// S2 比较当前子节点
+let render1 = compileToFunctions(`<div>
+   <li style="background:red">A</li>
+   <li style="background:yellow">B</li>
+   <li style="background:pink">C</li>
+   <li style="background:green">D</li>
+</div>`);
+
 let vnode1 = render1.call(vm1); // render方法返回的是虚拟dom
 
 document.body.appendChild(createElm(vnode1))
 
 
 let vm2 = new Vue({data:{name:'jg'}});
-let render2 = compileToFunctions('<div id="b" style="background: yellow" class="b">{{name}}</div>');
+// S1
+// let render2 = compileToFunctions('<div id="b" style="background: yellow" class="b">{{name}}</div>');
+
+// S2
+let render2 = compileToFunctions(`<div>
+   <li style="background:purple">A</li>
+   <li style="background:yellow">B</li>
+   <li style="background:pink">C</li>
+   <li style="background:green">D</li>
+   <li style="background:blue">E</li>
+</div>`);
+
 let vnode2 = render2.call(vm2);
 
 // 用新的虚拟节点对比老的虚拟节点，找到差异 去更新老的dom元素

@@ -243,4 +243,13 @@ S2 mountComponent() ==> callHook() + new Watcher(vm, updateComponent, hook) ==> 
   - 标签类型一样 + 非文本节点: 复用旧有dom节点dom1 + 更新dom1的属性为新vnode的属性
 
 
+## 8.2 实现 dom-diff2- 比较vnode中的 子节点: 头节点相同
 
+1 入口流程：patch(oldVnode, vnode)==> updateChildren(oldChildren, newChildren, parent)==> 新旧节点 + 头尾双指针碰撞技巧
+
+2.1 while(存在旧节点 && 存在新节点)
+  S1 头节点相同 ==> 
+    - 递归调用patch(oldStartVnode, newStartVnode): 更新属性 + 递归更新子节点
+    - 移动新旧头节点指针
+
+2.2 有遗留的新节点==> 插入新节点:  parent.appendChild(createElm(newChild))
