@@ -30,10 +30,10 @@ let vm1 = new Vue({data:{name:'zf'}});
 
 // S2 比较当前子节点
 let render1 = compileToFunctions(`<div>
-   <li style="background:red">A</li>
-   <li style="background:yellow">B</li>
-   <li style="background:pink">C</li>
-   <li style="background:green">D</li>
+   <li style="background:red" key="A">A</li>
+   <li style="background:yellow" key="B">B</li>
+   <li style="background:pink" key="C">C</li>
+   <li style="background:green" key="D">D</li>
 </div>`);
 
 let vnode1 = render1.call(vm1); // render方法返回的是虚拟dom
@@ -47,11 +47,11 @@ let vm2 = new Vue({data:{name:'jg'}});
 
 // S2
 let render2 = compileToFunctions(`<div>
-   <li style="background:purple">A</li>
-   <li style="background:yellow">B</li>
-   <li style="background:pink">C</li>
-   <li style="background:green">D</li>
-   <li style="background:blue">E</li>
+  <li style="background:purple" key="E">E</li>
+  <li style="background:red" key="A">A</li>
+  <li style="background:yellow" key="B">B</li>
+  <li style="background:pink" key="C">C</li>
+  <li style="background:green" key="D">D</li>
 </div>`);
 
 let vnode2 = render2.call(vm2);
@@ -59,7 +59,7 @@ let vnode2 = render2.call(vm2);
 // 用新的虚拟节点对比老的虚拟节点，找到差异 去更新老的dom元素
 setTimeout(() => {
   patch(vnode1,vnode2); // 传入新的虚拟节点和老的 做一个对比
-}, 2000);
+}, 3000);
 
 
 

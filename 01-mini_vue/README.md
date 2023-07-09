@@ -253,3 +253,16 @@ S2 mountComponent() ==> callHook() + new Watcher(vm, updateComponent, hook) ==> 
     - 移动新旧头节点指针
 
 2.2 有遗留的新节点==> 插入新节点:  parent.appendChild(createElm(newChild))
+
+## 8.3 实现 dom-diff3- 比较vnode中的 子节点: 尾节点相同
+
+1 入口流程：patch(oldVnode, vnode)==> updateChildren(oldChildren, newChildren, parent)==> 新旧节点 + 头尾双指针碰撞技巧
+
+2.2 while(存在旧节点 && 存在新节点)
+  S1 头节点相同，见上 8.2
+  S2 尾节点相同==>
+    - 递归调用 patch(oldEndVnode, newEndVnode)
+    - 移动新旧尾节点指针
+
+2.2 有遗留的新节点==> 在头部/尾部插入新节点：
+  parent.insertBefore(newChildX, nextEle)

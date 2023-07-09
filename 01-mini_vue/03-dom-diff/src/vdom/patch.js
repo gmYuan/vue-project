@@ -11,7 +11,7 @@ export function patch(oldVnode, vnode) {
     // debugger
     return el;
   } else {
-    debugger
+    // debugger;
     // 在更新的时 拿老的虚拟节点 和 新的虚拟节点做对比
     // 对于不同的地方 更新真实的dom
 
@@ -70,8 +70,8 @@ function updateChildren(oldChildren, newChildren, parent) {
   let oldEndVnode = oldChildren[oldEndIndex];
   // 新的开头和结尾 双指针
   let newStartIndex = 0;
-  let newEndIndex = newChildren.length - 1; 
-  let newStartVnode = newChildren[0];   // 新的索引指向的节点
+  let newEndIndex = newChildren.length - 1;
+  let newStartVnode = newChildren[0]; // 新的索引指向的节点
   let newEndVnode = newChildren[newEndIndex];
 
   // vue 中的diff算做了很多了优化
@@ -86,16 +86,29 @@ function updateChildren(oldChildren, newChildren, parent) {
       patch(oldStartVnode, newStartVnode); // 更新属性和再去递归更新子节点
       oldStartVnode = oldChildren[++oldStartIndex];
       newStartVnode = newChildren[++newStartIndex];
+    } else if (isSameVnode(oldEndVnode, newEndVnode)) {
+      patch(oldEndVnode, newEndVnode);
+      oldEndVnode = oldChildren[--oldEndIndex];
+      newEndVnode = newChildren[--newEndIndex];
     }
   }
-  // 插入新节点
+  // 在头部或者尾部 插入新节点
   if (newStartIndex <= newEndIndex) {
+    // debugger
     for (let i = newStartIndex; i <= newEndIndex; i++) {
-      parent.appendChild(createElm(newChildren[i]));
+      // 将新的多余的插入进去即可 ,可能是向前添加 还有可能是向后添加
+      // parent.appendChild(createElm(newChildren[i]));
+      
+      // 向后插入 ele = null
+      // 像前插入 ele 就是当前向谁前面插入
+      let ele =
+        newChildren[newEndIndex + 1] == null
+          ? null
+          : newChildren[newEndIndex + 1].el;
+      parent.insertBefore(createElm(newChildren[i]), ele);
     }
   }
 }
-
 
 // 创建真实元素
 export function createElm(vnode) {
