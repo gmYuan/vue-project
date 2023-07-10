@@ -78,27 +78,81 @@ function updateChildren(oldChildren, newChildren, parent) {
   // DOM中操作有很多常见的逻辑 把节点插入到当前儿子的头部、尾部、儿子倒叙正序
   // vue2中采用的是双指针的方式
 
-  // S1 在尾部添加
+  function makeIndexByKey(children) {
+    let map = {};
+    children.forEach((item, index) => {
+      if (item.key) {
+        map[item.key] = index; // {A:0, B:1, C:2, D:3}
+      }
+    });
+    return map;
+  }
+  let map = makeIndexByKey(oldChildren);
+
   // 做一个循环，同时循环老的和新的，哪个先结束 循环就停止，将多余的删除或者添加进去
   while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
-    if (isSameVnode(oldStartVnode, newStartVnode)) {
+    if (!oldStartVnode) {
+      // 指针指向了null 跳过这次的处理
+      oldStartVnode = oldChildren[++oldStartIndex];
+    } else if (!oldEndVnode) {
+      // 指针指向了null 跳过这次的处理
+      oldEndVnode = oldChildren[--oldEndIndex];
+      
+      // 新头-旧头 相同
+    } else if (isSameVnode(oldStartVnode, newStartVnode)) {
       // 如果俩人是同一个元素，比对儿子
       patch(oldStartVnode, newStartVnode); // 更新属性和再去递归更新子节点
       oldStartVnode = oldChildren[++oldStartIndex];
       newStartVnode = newChildren[++newStartIndex];
+      // 新尾-旧尾 相同
     } else if (isSameVnode(oldEndVnode, newEndVnode)) {
       patch(oldEndVnode, newEndVnode);
       oldEndVnode = oldChildren[--oldEndIndex];
       newEndVnode = newChildren[--newEndIndex];
+      // 旧头-新尾 相同
+    } else if (isSameVnode(oldStartVnode, newEndVnode)) {
+      patch(oldStartVnode, newEndVnode);
+      // 将当前元素插入到 旧的尾部的下一个元素的 前面
+      parent.insertBefore(oldStartVnode.el, oldEndVnode.el.nextSibling);
+      oldStartVnode = oldChildren[++oldStartIndex];
+      newEndVnode = newChildren[--newEndIndex];
+      // 旧尾-新头 相同
+    } else if (isSameVnode(oldEndVnode, newStartVnode)) {
+      patch(oldEndVnode, newStartVnode);
+      // 将当前元素插入到 旧的头部节点 的前面
+      parent.insertBefore(oldEndVnode.el, oldStartVnode.el);
+      oldEndVnode = oldChildren[--oldEndIndex];
+      newStartVnode = newChildren[++newStartIndex];
+      // 为什么要有key，循环的时候为什么不能用index作为key
+    } else {
+      // 儿子之间没关系==> 暴力比对
+
+      // 拿新头的虚拟节点的key，去旧节点的keyIndexMap中 尝试寻找index
+      let moveIndex = map[newStartVnode.key];
+      if (moveIndex == undefined) {
+        // 不需要移动说明没有key复用的：直接在旧头真实dom前插入 新头dom
+        parent.insertBefore(createElm(newStartVnode), oldStartVnode.el);
+      } else {
+        let moveVNode = oldChildren[moveIndex]; // 这个老的虚拟节点需要移动
+        // 比较 旧的moveVNode 和 新头vnode
+        patch(moveVNode, newStartVnode);
+        // 把旧的moveVNode，移动到旧的头节点真实dom 的前面
+        parent.insertBefore(moveVNode.el, oldStartVnode.el);
+        // 把旧的moveVNode对应index的值置为null
+        oldChildren[moveIndex] = null;
+      }
+      // 用新的头节点 不停的去老的里面找
+      newStartVnode = newChildren[++newStartIndex];
     }
   }
+
   // 在头部或者尾部 插入新节点
   if (newStartIndex <= newEndIndex) {
     // debugger
     for (let i = newStartIndex; i <= newEndIndex; i++) {
       // 将新的多余的插入进去即可 ,可能是向前添加 还有可能是向后添加
       // parent.appendChild(createElm(newChildren[i]));
-      
+
       // 向后插入 ele = null
       // 像前插入 ele 就是当前向谁前面插入
       let ele =
@@ -106,6 +160,17 @@ function updateChildren(oldChildren, newChildren, parent) {
           ? null
           : newChildren[newEndIndex + 1].el;
       parent.insertBefore(createElm(newChildren[i]), ele);
+    }
+  }
+
+  // 老的节点还有没处理的，说明这些老节点是不需要的节点
+  // 如果这里面有null，说明这个节点已经被处理过了，跳过即可 + 否则删除该节点即可
+  if (oldStartIndex <= oldEndIndex) {
+    for (let i = oldStartIndex; i <= oldEndIndex; i++) {
+      let child = oldChildren[i];
+      if (child != null) {
+        parent.removeChild(child.el);
+      }
     }
   }
 }

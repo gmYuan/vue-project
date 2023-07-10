@@ -34,6 +34,7 @@ let render1 = compileToFunctions(`<div>
    <li style="background:yellow" key="B">B</li>
    <li style="background:pink" key="C">C</li>
    <li style="background:green" key="D">D</li>
+   <li style="background:green" key="F">F</li>
 </div>`);
 
 let vnode1 = render1.call(vm1); // render方法返回的是虚拟dom
@@ -47,11 +48,10 @@ let vm2 = new Vue({data:{name:'jg'}});
 
 // S2
 let render2 = compileToFunctions(`<div>
-  <li style="background:purple" key="E">E</li>
-  <li style="background:red" key="A">A</li>
-  <li style="background:yellow" key="B">B</li>
-  <li style="background:pink" key="C">C</li>
-  <li style="background:green" key="D">D</li>
+  <li style="background:green" key="M">M</li>
+  <li style="background:pink" key="B">B</li>
+  <li style="background:yellow" key="A">A</li>
+  <li style="background:red" key="Q">Q</li>
 </div>`);
 
 let vnode2 = render2.call(vm2);

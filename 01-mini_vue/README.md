@@ -264,5 +264,44 @@ S2 mountComponent() ==> callHook() + new Watcher(vm, updateComponent, hook) ==> 
     - 递归调用 patch(oldEndVnode, newEndVnode)
     - 移动新旧尾节点指针
 
-2.2 有遗留的新节点==> 在头部/尾部插入新节点：
+2.2 有遗留的新节点==> 在头部/尾部真实dom前面 插入新节点：
   parent.insertBefore(newChildX, nextEle)
+
+## 8.4 实现 dom-diff4- 比较vnode中的 子节点: 头-尾/尾-头 节点相同
+
+1 入口流程：patch(oldVnode, vnode)==> updateChildren(oldChildren, newChildren, parent)==> 新旧节点 + 头尾双指针碰撞技巧
+
+2.2 while(存在旧节点 && 存在新节点)
+  S1 头节点相同，见上 8.2
+  S2 尾节点相同==> 见上 8.3
+  S3 旧头-新尾 相同
+    - 递归调用 patch(oldStartVnode, newEndVnode)
+    - 将当前 旧头真实dom插入到 旧尾节点的 下一个真实dom元素的 前面
+    - 移动旧的头节点指针 + 新的尾节点指针
+
+  S4 旧尾-新头 相同
+    - 递归调用 patch(oldEndVnode, newStartVnode)
+    - 将当前 旧尾真实dom元素插入到 旧的头部真实dom元素 的前面
+    - 移动旧的尾节点指针 + 新的头节点指针
+
+具体过程，见 [diff-旧头_新尾](./03-dom-diff/img/01-旧头_新尾.jpg)
+
+
+## 8.5 实现 dom-diff5- 比较vnode中的 子节点: 4种情况都不相同- keyMap & 暴力对比
+
+1 入口流程：patch(oldVnode, vnode)==> updateChildren(oldChildren, newChildren, parent)==> 新旧节点 + 头尾双指针碰撞技巧
+
+2.2 while(存在旧节点 && 存在新节点)
+  S1 头节点相同==> 见上 8.2
+  S2 尾节点相同==> 见上 8.3
+  S3 & S4 旧头-新尾 相同/ 旧尾-新头 相同 ==> 见上 8.4
+
+  S5 头尾 & 交叉都不相同时，则以新的头结点作为依据：
+    - 不断拿新头的虚拟节点的key，去旧节点的keyIndexMap中 尝试寻找index
+    - 如果没找到，说明没有可复用的节点，直接在 旧头真实dom前插入 新头dom
+    - 如果找到，说明有可复用节点，记作递归调用
+      - 递归调用 patch(moveVNode, newStartVnode)
+      - 把旧的moveVNode，移动到旧的头节点真实dom 的前面
+      - 把旧的moveVNode 对应index的值置为null
+
+2.3 循环结束后，如果还有 旧节点还没处理：直接删除这些旧节点元素即可
