@@ -305,3 +305,12 @@ S2 mountComponent() ==> callHook() + new Watcher(vm, updateComponent, hook) ==> 
       - 把旧的moveVNode 对应index的值置为null
 
 2.3 循环结束后，如果还有 旧节点还没处理：直接删除这些旧节点元素即可
+
+
+## 8.6 实现 dom-diff6- 在vm._update的内部区分初次渲染和更新渲染
+
+1 mountComponent()==> new Watcher() ==> watcher.get()/ watcher.getter() ==> updateComponent() ==>  vm._update(render)==> 
+  - 根据是否存在prevVnode，来区分是首次渲染/ 更新渲染
+  - 首次渲染: vm.$el = patch(vm.$el, vnode)
+  - 更新渲染: vm.$el = patch(prevVnode, vnode)
+  - 每次都更新preVnode: vm._vnode = vnode

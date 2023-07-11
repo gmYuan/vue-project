@@ -20,6 +20,7 @@ stateMixin(Vue);   // $nextTick()、$watch()等实现
 initGlobalApi(Vue);
 
 
+/** 
 // 为了看到diff的整个流程 创建两个虚拟节点来进行比对操作
 import {compileToFunctions} from './compiler/index';
 import {createElm,patch} from './vdom/patch'
@@ -61,9 +62,7 @@ setTimeout(() => {
   patch(vnode1,vnode2); // 传入新的虚拟节点和老的 做一个对比
 }, 3000);
 
-
-
-
+*/
 
 
 export default Vue;

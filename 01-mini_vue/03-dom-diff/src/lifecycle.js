@@ -5,9 +5,17 @@ export function lifecycleMixin(Vue) {
   Vue.prototype._update = function (vnode) {
     const vm = this;
     // debugger
-
-    // 用新的创建的元素 替换老的vm.$el
-    vm.$el = patch(vm.$el, vnode);
+   
+    //  这里需要区分一下 到底是首次渲染还是更新
+    const prevVnode = vm._vnode; // 如果第一次_vnode不存在
+    if (!prevVnode) {
+      // 用新的创建的元素 替换老的vm.$el
+      vm.$el = patch(vm.$el, vnode);
+    } else {
+      // 拿上一次的vnode 和 本次做对比
+      vm.$el = patch(prevVnode, vnode);
+    }
+    vm._vnode = vnode; // 保存第一次的vnode
   };
 }
 
@@ -22,12 +30,14 @@ export function mountComponent(vm, el) {
   };
 
   // 初始化就会创建 渲染watcher==> 要把属性 和 watcher 绑定在一起
-  let watcher = new Watcher(vm, updateComponent,
+  let watcher = new Watcher(
+    vm,
+    updateComponent,
     () => {
       callHook(vm, "updated");
     },
     true
-  ); 
+  );
 
   callHook(vm, "mounted");
 }
