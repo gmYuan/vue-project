@@ -314,3 +314,20 @@ S2 mountComponent() ==> callHook() + new Watcher(vm, updateComponent, hook) ==> 
   - 首次渲染: vm.$el = patch(vm.$el, vnode)
   - 更新渲染: vm.$el = patch(prevVnode, vnode)
   - 每次都更新preVnode: vm._vnode = vnode
+
+
+## 9.1 computed实现1
+
+1 执行流程：
+
+S1 new Vue()==> vm._init()==> initState(vm)==> initComputed(vm)
+  - 获取computed里定义的每个 key1- fn1/ {get1, set1}
+  - defineComputed(vm, key1, fn1)
+
+S2 defineComputed(vm, key1, fn1)
+  - 设置sharedPropertyDefinition.get = fn1
+  - 设置 Object.definePty(vm, key, sharedPtyDefinition)
+
+S3 当读取vm.key1时，就会走defineComputed设置的 拦截逻辑
+
+注意，目前实现的获取computed没有实现缓存功能
