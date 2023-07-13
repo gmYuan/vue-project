@@ -316,7 +316,7 @@ S2 mountComponent() ==> callHook() + new Watcher(vm, updateComponent, hook) ==> 
   - 每次都更新preVnode: vm._vnode = vnode
 
 
-## 9.1 computed实现1
+## 9.1 computed实现1-无缓存功能
 
 1 执行流程：
 
@@ -331,3 +331,39 @@ S2 defineComputed(vm, key1, fn1)
 S3 当读取vm.key1时，就会走defineComputed设置的 拦截逻辑
 
 注意，目前实现的获取computed没有实现缓存功能
+
+
+## 9.1 computed实现2- 实现缓存功能
+
+1 执行流程：
+
+S1 new Vue()==> vm._init()==> initState(vm)==> initComputed(vm)
+  - 获取computed里定义的每个 key1- fn1/ {get1, set1}
+  - 创建每个computed_key的 Watcher(vm, fn1/get1, null, { lazy: true } )
+    - 创建 watcher.lazy + watcher.dirty相关属性 + 默认不执行watcher.get()
+  - defineComputed(vm, key1, fn1)
+
+S2 defineComputed(vm, key1, fn1)
+  - 设置sharedPropertyDefinition.get = createComputedGetter(key)
+    - 返回一个高阶函数Wrap, 等待comp_key被读取时，就会调用Wrap
+  - 设置 Object.definePty(vm, key, sharedPtyDefinition)
+
+S3 读取vm.(computed).key1时，执行Wrap()
+  - S3.1 获取comp_key的watcher, 记作 compKey1_watcher
+
+  - S3.2 如果compKey1_watcher.dirty==> 执行 compKey1_watcher.evaluate()
+    - 调用compKey1_watcher.get(): 进出Dep.target + watcher.getter()
+      - watcher.getter()即 fn1()，从而在执行过程中计算属性内部依赖的 data.key会收集 compKey1_watcher
+    - 更新 compKey1_watcher.dirty为false，从而设置了缓存
+
+  - S3.3 (直接) 返回 compKey1_watcher.value，即 fn1的返回值
+
+S4.1 当修改了compKey1内部依赖的属性值时
+  - data.key1.setter(): observe(newValue) + dep.notify()
+    - watcherX.update():
+      - 计算属性watcher: watcherX.dirty重置为 true
+      - 非计算属性watcher: queueWatcher(watcherX)
+
+S4.2 再次读取 compKey1的值==> 执行Wrap()
+  - 由于 compKey1_watcher.dirty重置为了true，所以会再走1次 S3.2的逻辑
+  - 返回新的 compKey1_watcher.value值

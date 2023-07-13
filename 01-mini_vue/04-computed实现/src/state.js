@@ -39,32 +39,57 @@ function initProps() {}
 function initMethods() {}
 
 function initComputed(vm) {
-  debugger
+
   let computed = vm.$options.computed;
   // 1.需要有watcher  2.还需要通过defineProperty 3.dirty
-
+ 
   // 用来稍后存放计算属性的watcher
-  // const watchers = (vm._computedWatchers = {});
-
+  const watchers = (vm._computedWatchers = {});
+  debugger;
+  
   for (let key in computed) {
     const userDef = computed[key]; // 取出对应的值来
-    // 获取get方法
-    // const getter = typeof userDef == "function" ? userDef : userDef.get; // watcher使用的
+    // 获取get方法, 用于给 计算属性watcher使用的
+    const getter = typeof userDef == "function" ? userDef : userDef.get;
+    watchers[key] = new Watcher(vm, getter, () => {}, { lazy: true });
 
     defineComputed(vm, key, userDef); // defineReactive();
   }
 }
 
-const sharedPropertyDefinition = {};
 function defineComputed(target, key, userDef) {
+  const sharedPropertyDefinition = {
+    enumerable: true,
+    configurable: true,
+    get: () => {},
+    set: () => {},
+  };
+
   // 这样写是没有缓存的，需要加缓存
   if (typeof userDef == "function") {
-    sharedPropertyDefinition.get = userDef
+    // dirty 来控制是否调用userDef
+    sharedPropertyDefinition.get = createComputedGetter(key);
   } else {
-    sharedPropertyDefinition.get = userDef.get;
+    // 需要加缓存
+    sharedPropertyDefinition.get = createComputedGetter(key);
     sharedPropertyDefinition.set = userDef.set;
   }
   Object.defineProperty(target, key, sharedPropertyDefinition);
+}
+
+function createComputedGetter(key) {
+  return function () {
+    // 此方法是我们包装的方法，每次取值会调用此方法
+    const watcher = this._computedWatchers[key]; // 拿到这个属性对应watcher
+    if (watcher) {
+      // 默认肯定是脏的
+      if (watcher.dirty) {
+        watcher.evaluate(); // 对当前watcher求值
+      }
+     
+      return watcher.value; // 默认返回watcher上存的值
+    }
+  };
 }
 
 

@@ -10,7 +10,7 @@
 <body>
 	<div id="app">
     <span>哈哈</span>
-    <p>{{fullName}}</p>
+    <p>{{name}}</p>
   </div>
 	
 	<script src="dist/umd/vue.js"></script>
@@ -34,12 +34,15 @@
       }
 		})
 
+    debugger
 		console.log('读取1', vm.fullName)
 		console.log('读取2', vm.fullName)
 
-		// setTimeout(() => {
-    //   vm.firstName = '李';
-    // }, 2500);
+		setTimeout(() => {
+      debugger
+      vm.firstName = '李';
+      console.log('读取3', vm.fullName)
+    }, 2500);
 
 	</script>
 </body>
