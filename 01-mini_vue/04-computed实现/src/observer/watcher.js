@@ -51,7 +51,7 @@ class Watcher {
     pushTarget(this); // 当前watcher实例
     // 调用exprOrFn==> render方法()==> 取值（执行了get方法）
     // let result = this.getter();
-    let result = this.getter.call(this.vm); 
+    let result = this.getter.call(this.vm);
 
     popTarget(); //渲染完成后 将watcher删掉了
     return result;
@@ -69,7 +69,7 @@ class Watcher {
   }
 
   update() {
-     // 是计算属性
+    // 是计算属性
     if (this.lazy) {
       this.dirty = true; // 页面重新渲染就可以获得最新的值了
     } else {
@@ -83,17 +83,26 @@ class Watcher {
     }
   }
 
-  evaluate() {
-    this.value = this.get();
-    this.dirty = false; // 取过一次值之后 就表示成已经取过值了
-  }
-
   run() {
     let newValue = this.get(); // 渲染逻辑
     let oldValue = this.value;
     this.value = newValue; // 更新一下老值
     if (this.user) {
       this.cb.call(this.vm, newValue, oldValue);
+    }
+  }
+
+  evaluate() {
+    this.value = this.get();
+    this.dirty = false; // 取过一次值之后 就表示成已经取过值了
+  }
+
+  depend() {
+    // 计算属性watcher会存储dep 
+    // 通过计算属性watcher找到对应的所有dep，让所有的dep 都记住这个渲染watcher
+    let i = this.deps.length;
+    while (i--) {
+      this.deps[i].depend(); // 让dep去存储 渲染watcher
     }
   }
 }

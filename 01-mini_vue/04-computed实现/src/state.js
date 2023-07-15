@@ -1,6 +1,7 @@
 import { observe } from "./observer/index";
 import { proxy, nextTick } from "./util.js";
 import Watcher from "./observer/watcher";
+import Dep from "./observer/dep";
 
 export function initState(vm) {
   // vm.$options
@@ -45,7 +46,7 @@ function initComputed(vm) {
  
   // 用来稍后存放计算属性的watcher
   const watchers = (vm._computedWatchers = {});
-  debugger;
+  // debugger;
   
   for (let key in computed) {
     const userDef = computed[key]; // 取出对应的值来
@@ -85,6 +86,10 @@ function createComputedGetter(key) {
       // 默认肯定是脏的
       if (watcher.dirty) {
         watcher.evaluate(); // 对当前watcher求值
+      }
+      // debugger;
+      if (Dep.target) { // 说明还有渲染watcher，也应该一并的收集起来
+        watcher.depend();  // 注意是watcher.depend()，而不是dep.denpend()
       }
      
       return watcher.value; // 默认返回watcher上存的值

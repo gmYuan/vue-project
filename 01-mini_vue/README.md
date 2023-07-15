@@ -333,7 +333,7 @@ S3 当读取vm.key1时，就会走defineComputed设置的 拦截逻辑
 注意，目前实现的获取computed没有实现缓存功能
 
 
-## 9.1 computed实现2- 实现缓存功能
+## 9.2 computed实现2- 实现缓存功能
 
 1 执行流程：
 
@@ -367,3 +367,39 @@ S4.1 当修改了compKey1内部依赖的属性值时
 S4.2 再次读取 compKey1的值==> 执行Wrap()
   - 由于 compKey1_watcher.dirty重置为了true，所以会再走1次 S3.2的逻辑
   - 返回新的 compKey1_watcher.value值
+
+
+## 9.3 computed实现3- 实现computed里的依赖dataKey 存储渲染watcher
+
+1 目前问题：
+
+经过9.1 和 9.2处理后，现在computed里依赖的dataKey值更新后，再次去读computedKey已经能获取到最新值，但是如果在页面渲染时读取了computedKey,其内部依赖的dataKey值更新后，页面显示的还是旧值computedKey
+
+2 问题出现原因:
+  - dataKey已经收集了computedKey对应的watcherX，所以dataKey的值发生变化后，会让watcherX.dirty重置为 true，从而在下次读取computedKey时，会再次调用compKey1_watcher.evaluate()计算出新值
+
+  - 但是dataKey没有收集renderWatcher，这就导致当dataKey值发生变化后，不会主动重新生成新的vdom
+
+
+3 解决方法/ 执行流程
+
+S1 new Vue()==> vm._init()==> 
+  S1.1 initState(vm)==> initComputed(vm)==> ....
+
+  S1.2 vm.$mount(el)==> mountComponent(vm, el)==> new Watcher(vm,  updateComponent)==> watcher.get()==> watcher进出栈 + [watcher.getter.call(vm)]==> [updateComponent()] ==> vm._update( vm._render() )==>
+
+  S1.3 vm._render()过程中遇到了计算属性compkey1读取==> compkey1的getter拦截==> 计算属性的 watcher.evaluate()==> watcher.get() & dirty置为false==> [watcher进出栈] + [watcher.getter.call(vm)]==> compkey1Fn执行 ==> 
+
+  S1.4 compkey1Fn执行过程中读取了 dataKey1/key2==>  dataKey1/key2的getter拦截==> Key1dep.depend()==> compkey1_watcher.addDep(dep)==> Key1dep.addSub(compkey1_watcher)==> [compkey1Fn执行]执行完成==> 
+
+  S1.5 [compkey1Fn执行]执行完成==> compkey1_watcher出栈, 即栈里还有renderWatcher==> 返回watcher.evaluate()的执行结果 + [compkey1的getter拦截]==> 计算属性的watcher.evaluate(执行过程见S1.3 ~ S1.4) + watcher.depend()
+
+
+S2  watcher.depend()==> compkey1_watcher里已经存储了dataKey1/key2的dep ==> 执行key1Dep/key2Dep.depend()==> renderWatcher.addDep(key1Dep)==> key1Dep.addSub(renderWatcher)==> 
+> 让renderWatcher里也存储了compkey1_watcher里依赖的那些 dataKey的dep
+
+S3 当dataKey1的值被更新时==> dataKey.setter拦截==> dep.notify()==> watcherX.update()==>
+  - S3.1 compWatcher==> compWatcher.dirty重置为 true
+  - S3.2 renderWatcher==> queueWatcher(renderWatcher)==> nextTick(flushSchedulerQueue)==> timerFunc()==> flushCallbacks()进入微队列
+    - S3.2.1 flushCallbacks()==> callbacks.shift()() ==> flushSchedulerQueue() ==> watcher.run()==> watcher.get() + watcher.cb()
+
