@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app">
+		{{name}}
+    <my-button></my-button>
+		<aa></aa>
+  </div>
+
+  <script src="./dist/umd/vue.js"></script>
+  <!-- 为什么要拆分成小的组件 
+		1）实现复用  
+		2) 方便维护 
+		3) 编写组件能拆分尽量拆分: vue的更新原理: 每个组件都有一个watcher，拆分可以减少比对
+	-->
+  <script>
+    // 全局组件  
+    Vue.component('my-button',{  // Vue.extend
+      template:'<button> 我是全局组件按钮 </button>',
+    });
+		// debugger1
+		Vue.component('aa',{  
+      template:'<button> 我是全局组件aa </button>',
+    });
+
+    // 组件的合并策略, 就近策略 我们可以将全局组件放到原型链上
+		// debugger2
+    let vm = new Vue({
+			el: '#app', 
+      components:{
+				aa:{ template:'<div> 我是非全局组件aa </div>' },
+        bb:{ template:'<div>world</div>' }
+      },
+      data: {
+				name: 'zf',
+        firstName:'张',
+        lastName:'三'
+      }
+    });
+
+    console.log(vm); // 合并父子组件的components属性 通过原型链来进行查找
+    // 组件有可能是一个对象 还有可能是一个构造函数，组件的属性中多了一个 hook属性，并且包含着组件的初始化方法
+   
+	</script>
+</body>
+</html>
+

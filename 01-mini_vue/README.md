@@ -403,3 +403,65 @@ S3 当dataKey1的值被更新时==> dataKey.setter拦截==> dep.notify()==> watc
   - S3.2 renderWatcher==> queueWatcher(renderWatcher)==> nextTick(flushSchedulerQueue)==> timerFunc()==> flushCallbacks()进入微队列
     - S3.2.1 flushCallbacks()==> callbacks.shift()() ==> flushSchedulerQueue() ==> watcher.run()==> watcher.get() + watcher.cb()
 
+
+## 10.1 组件实现原理- 自定义组件的创建原理引论
+
+1 执行流程：
+
+S1 创建组件内容: <template>、<script>、<style>
+
+S2 使用AST语法树解析并获取到组件的字符串形式的内容
+
+S3 利用 obj = new Function(script)() + obj.template = template 获取到返回对象
+  - obj = { data: date(){}, template: 'xxx....' }
+
+S4 利用 childComponent = Vue.extend(obj)来创建 `Vue构造函数的 子组件构造函数`
+
+S5 通过 new ChildComponent().$mount('#run-result')来创建组件实例，并挂载到页面指定位置
+
+
+## 10.2 组件实现原理- 自定义组件1：创建原型关系
+
+1 执行流程：
+
+S1 调用Vue.component()注册全局组件==> Vue.component()
+  - S1.2 通过 definition = Vue.extend(definition) 构造出基于 Vue构造函数的子类
+  - 在Vue函数的 全局组件记录对象上(Vue.options.components)注册 {componentName: definition}映射关系
+  
+S1.2 Vue.extend(definition)
+  - 定义 VueComponent组件构造函数，其内部在实例化时会自动执行 this._init(options)
+  - 通过 原型继承，让Sub.prototype.__proto__ = Super.prototype + 修正 Sub.prototype.constructor
+  - 合并 父类选项 和组件构造函数选项: mergeOptions(Super.options, extendOptions)==>
+  
+
+S2 调用new Vue({components: {} }) 生成局部组件==> vm._init()
+  - 合并选项 vm.$options = mergeOptions(vm.constructor.options, options) ==> 
+  - mergeOptions() ==> mergeField(key)==> strats.components(parentVal, childVal): 通过原型继承，实现组件的 就近合并策略，让全局组件放到原型链上
+
+S2.2 继续进行初始化其他工作：vm.initState()等
+
+
+## 10.3 组件实现原理- 自定义组件2：创建组件类型的vnode节点
+
+1 执行流程
+
+new Vue()==> vm._init()==> Vue.$mount()==> mountComponent()==> new Watcher()==> watcher.get()==> updateComponent()==> vm._render()==> [下文内容] ==> Vue.pty._update()==> patch()==> createElm()
+
+  - Vue.prototype._s: 解析和读取模板里的 变量值
+  - Vue.prototype._v: 创建文本类型的 vnode节点
+  - 2 Vue.prototype._c: 创建原生tag/组件类型的 vnode节点
+
+2 Vue.prototype._c
+  - 根据tag+ 原生tagMap映射文件，判断当前节点是 原生tag/自定义组件tag
+  - 如果是原生tag: 创建原生tag的 vnode节点
+  - 是自定义组件tag:
+    - 根据自定义组件tag，获取到对应的值，即自定义组件 构造函数/对象
+    - 3 创建自定义组件的虚拟节点：createComponent()
+
+3 createComponent()
+  - 通过baseCtor.extend(即 Vue.extend)兼容对象类型的 Ctor构造函数
+  - 给组件增加生命周期钩子: data.hook = { init(){} }
+  - 生成自定义组件的虚拟节点: return vnode(...args)
+
+4 目前存在的问题：
+  - 创建的自定义组件vnode，由于传入的children暂时未空，导致patch()==> createElm()时会报错

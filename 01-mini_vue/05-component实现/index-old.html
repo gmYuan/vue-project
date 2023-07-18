@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Document</title>
+</head>
+
+<body>
+	<div id="app">
+    <span>哈哈</span>
+    <p>{{fullName}}</p>
+  </div>
+	
+	<script src="dist/umd/vue.js"></script>
+
+	<script>
+	  let vm = new Vue({
+      el: '#app',
+      data: {
+        name: 'zf',
+		    firstName: '张',
+        lastName: '三'
+      },
+			computed: { 
+				//内部也使用了defineProperty, 内部有一个变量 dirty
+        // computed还是一个watcher，内部依赖的属性会收集这个watcher
+        fullName() {
+          // debugger
+					console.log('读取了fullName------')
+          // this.firstName ,this.lastName 在求值时, 会记住当前计算属性的watcher
+          return this.firstName + this.lastName
+        }
+      }
+		})
+
+    // debugger
+		// console.log('读取1', vm.fullName)
+		// console.log('读取2', vm.fullName)
+
+    // firstName,lastName会收集 computed的watcher
+    // firstName,lastName应该也将 渲染watcher收集起来
+		// setTimeout(() => {
+    //   // debugger
+    //   vm.firstName = '李';
+    //   console.log('读取3', vm.fullName)
+    // }, 2500);
+
+	</script>
+</body>
+
+</html>
