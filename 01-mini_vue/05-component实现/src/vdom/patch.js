@@ -1,4 +1,10 @@
 export function patch(oldVnode, vnode) {
+
+  if(!oldVnode){ // 如果是组件, 这个oldVnode是个undefined
+    debugger
+    return createElm(vnode); // vnode是组件中的内容
+  }
+
   // 默认初始化时 是直接用虚拟节点创建出真实节点来 替换掉老真实节点
   // 第1次渲染：oldVnode: id#app;  vnode: 生成的虚拟dom
   if (oldVnode.nodeType === 1) {
@@ -179,6 +185,11 @@ function updateChildren(oldChildren, newChildren, parent) {
 export function createElm(vnode) {
   let { tag, children, key, data, text } = vnode;
   if (typeof tag == "string") {
+    // 组件渲染后的结果vm.$el, 放到当前组件的实例上
+    if(createComponent(vnode)){
+      return vnode.componentInstance.$el; // 组件对应的dom元素
+    }
+
     // 创建元素 放到vnode.el上
     vnode.el = document.createElement(tag);
 
@@ -196,10 +207,20 @@ export function createElm(vnode) {
   return vnode.el;
 }
 
+function createComponent(vnode){
+  // 调用hook中init方法 
+  let i = vnode.data;
+  if((i = i.hook) && (i = i.init)){ // i就是init方法
+    i(vnode); // 内部会去new组件 ==> 会将实例挂载在vnode上
+  }
+  if(vnode.componentInstance){ // 如果是组件, 返回true
+    return true;
+  }
+}
+
 // vue 的渲染流程
 //  先初始化数据==> 将模板进行编译==> render函数==>
 //  生成虚拟节点==> 生成真实的dom==> 渲染到页面上
-
 function updateProperties(vnode, oldProps = {}) {
   let el = vnode.el;
   let newProps = vnode.data || {};

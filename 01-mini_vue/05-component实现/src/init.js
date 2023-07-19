@@ -9,7 +9,7 @@ export function initMixin(Vue) {
     const vm = this;
     // vm.$options = options;
     // 需要将用户自定义的options 和全局的options做合并
-    console.log('initMixin里的合并选项--', vm.constructor.options, options)
+    // console.log('initMixin里的合并选项--', vm.constructor.options, options)
     vm.$options = mergeOptions(vm.constructor.options, options);
     callHook(vm, 'beforeCreate') 
 

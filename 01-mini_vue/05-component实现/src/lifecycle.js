@@ -4,7 +4,7 @@ import Watcher from "./observer/watcher";
 export function lifecycleMixin(Vue) {
   Vue.prototype._update = function (vnode) {
     const vm = this;
-    // debugger
+    debugger
    
     //  这里需要区分一下 到底是首次渲染还是更新
     const prevVnode = vm._vnode; // 如果第一次_vnode不存在

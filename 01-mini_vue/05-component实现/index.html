@@ -23,7 +23,25 @@
   <script>
     // 全局组件  
     Vue.component('my-button',{  // Vue.extend
-      template:'<button> 我是全局组件按钮 </button>',
+      data() {
+        return {a: 1}
+      },
+      template:'<button> 我是全局组件按钮{{a}} </button>',
+      created(){
+        console.log('child created')
+      },
+      beforeCreate(){
+        console.log('child beforeCreate')
+      },
+      beforeMount(){
+        console.log('child beforeMount')
+      },
+      mounted(){
+        console.log('child mounted')
+        setTimeout(() => {
+          this.a = 100;
+        }, 1000);
+      },
     });
 		// debugger1
 		Vue.component('aa',{  
@@ -42,10 +60,24 @@
 				name: 'zf',
         firstName:'张',
         lastName:'三'
-      }
+      },
+
+      created(){
+        console.log('parent created')
+      },
+      beforeCreate(){
+        console.log('parent beforeCreate')
+      },
+      beforeMount(){
+        console.log('parent beforeMount')
+      },
+      mounted(){
+        console.log('parent mounted')
+      },
+
     });
 
-    console.log(vm); // 合并父子组件的components属性 通过原型链来进行查找
+    // console.log(vm); // 合并父子组件的components属性 通过原型链来进行查找
     // 组件有可能是一个对象 还有可能是一个构造函数，组件的属性中多了一个 hook属性，并且包含着组件的初始化方法
    
 	</script>

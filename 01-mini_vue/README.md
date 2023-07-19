@@ -465,3 +465,30 @@ new Vue()==> vm._init()==> Vue.$mount()==> mountComponent()==> new Watcher()==> 
 
 4 目前存在的问题：
   - 创建的自定义组件vnode，由于传入的children暂时未空，导致patch()==> createElm()时会报错
+
+
+## 10.4 组件实现原理- 自定义组件3：创建组件类型的真实dom元素
+
+1 执行流程
+
+S1 生成组件的vnode流程，见上 10.3内容
+
+S2 Vue.prototype._update()==> patch(div#app, VDivnode)==> createElm(vnode)==> vnode.el.appendChild(createElm(child))
+
+S3 createElm(child)==> 
+  - 文本类型：生成文本Dom，放到vnode.el上
+  - 自定义组件类型：createComponent(vnode)==>
+    - S4 component.data.hook.init(vnode)
+    - return vnode.componentInstance.$el, 即 组件对应的dom元素
+
+S4 component.init(vnode)
+  - S4.1 child = vnode.componentInstance = new Ctor({})==> Ctor是Vue的子类 + Ctor实例.init(options)==>
+    Vue._init()流程==> 由于组件实例options不存在el,所以不会自动执行 $mount()
+
+  - S4.2 child.$mount(): 收到执行$mount()，挂载自定义组件到内存中
+    - 获取组件的template
+    - 根据tempalte生成render函数 render = compileToFunctions(template)
+
+    - mountComponent(vm, el)==> new Component Watcher()==> 组件的 updateComponent()==> vm._update(vm._render())==> 获取到组件实例的 vm.$el值，即vnode.componentInstance.$el值 永远是组件的 根原生tag节点
+
+S5 跟新值==> 进行dom_diff流程

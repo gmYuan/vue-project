@@ -31,9 +31,9 @@ export const LIFECYCLE_HOOKS = [
 ];
 
 const strats = {};
-strats.data = function (parentVal, childValue) {
-  return childValue; // 这里应该有合并data的策略
-};
+// strats.data = function (parentVal, childValue) {
+//   return childValue; // 这里应该有合并data的策略
+// };
 
 strats.components = function (parentVal, childVal) {
   const res = Object.create(parentVal); // res.__proto__ = parentVal

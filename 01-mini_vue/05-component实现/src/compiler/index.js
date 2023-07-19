@@ -19,8 +19,8 @@ export function compileToFunctions(template) {
   // 稍后调用render函数就可以通过改变this 让这个函数内部取到结果了
   let render = new Function(`with(this){return ${code}}`);
   // debugger
-  console.log('compileToFunctions里生成的render函数是--', render)
-  console.log('------------------------------------------')
+  // console.log('compileToFunctions里生成的render函数是--', render)
+  // console.log('------------------------------------------')
   return render;
 
 }

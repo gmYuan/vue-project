@@ -5,9 +5,9 @@ export function renderMixin(Vue) {
   Vue.prototype._render = function () {
     const vm = this;
     const render = vm.$options.render;
-    debugger
+    // debugger
     let vnode = render.call(vm);
-    console.log("render函数是--", render);
+    // console.log("render函数是--", render);
     console.log("render函数生成的vdom是--", vnode);
     return vnode;
   };
@@ -56,7 +56,11 @@ function createComponent(vm, tag, data, key, children, Ctor) {
   // 给组件增加生命周期
   data.hook = {
     // 稍后初始化组件时 会调用此init方法
-    init() {},
+    init(vnode) {
+      let child = vnode.componentInstance = new Ctor({}); // vm.$el
+      child.$mount(); // 挂载逻辑 组件的$mount方法中是不传递参数的  
+      // vnode.componentInstance.$el 指代的是当前组件的真实dom
+    }
   };
   // vue-component-0-app
   return vnode(
