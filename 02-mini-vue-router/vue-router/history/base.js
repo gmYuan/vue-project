@@ -1,5 +1,5 @@
-export function createRoute(record, location) {
-  let res = []; //[/about /about/a]
+export function createRoute(record, locationObj) {
+  let res = [];   // [/about /about/a]
   if (record) {
     while (record) {
       res.unshift(record);
@@ -7,7 +7,7 @@ export function createRoute(record, location) {
     }
   }
   return {
-    ...location,
+    ...locationObj,
     matched: res,
   };
 }
@@ -23,11 +23,13 @@ function runQueue(queue, iterator, cb) {
   step(0);
 }
 
-
 class History {
   constructor(router) {
     this.router = router;
-    // 当我们创建完路由号 ，先有一个默认值 路径 和 匹配到的记录做成一个映射表
+    // 当我们创建完路由，先有一个默认值 路径 和 匹配到的记录做成一个映射表
+    // { '/': Record, "about': Record, "/about/a':record, "/about/b':record }
+    // about/a/ ==> matches :[ Record, Record]
+
 
     // 默认当创建history时 路径应该是/ 并且匹配到的记录是[]
     this.current = createRoute(null, {
@@ -38,17 +40,13 @@ class History {
     // this.current = {path:'/',matched:[]}
   }
 
-  listen(cb) {
-    this.cb = cb;
-  }
-
-  transitionTo(location, onComplete) {
+  transitionTo(locationStr, onComplete) {
     // 跳转时都会调用此方法 from  to..
     // 路径变化了 视图还要刷新 ，  响应式的数据原理
-    let route = this.router.match(location); // {'/'.matched:[]}
+    let route = this.router.match(locationStr); // {'/'.matched:[]}
     // 这个route 就是当前最新的匹配到的结果
     if (
-      location == this.current.path &&
+      locationStr == this.current.path &&
       route.matched.length == this.current.matched.length
     ) {
       // 防止重复跳转
@@ -61,16 +59,20 @@ class History {
         next();
       });
     };
+
     runQueue(queue, iterator, () => {
       // 在更新之前先调用注册好的导航守卫
-
       this.updateRoute(route);
       // 根据路径加载不同的组件  this.router.matcher.match(location)  组件
       // 渲染组件
       onComplete && onComplete();
     });
   }
-	
+
+  listen(cb) {
+    this.cb = cb;
+  }
+
   updateRoute(route) {
     // 每次你更新的是current
     this.current = route; // 每次路由切换都会更改current属性

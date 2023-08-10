@@ -12,7 +12,8 @@ class HashHistory extends History {
     // 这里也是要拿到hash值
     return getHash();
   }
-	setupListener() {
+  
+  setupListener() {
     window.addEventListener("hashchange", () => {
       // 当hash值变化了 在次拿到hash值进行跳转
       this.transitionTo(getHash()); // hash变化在次进行跳转
@@ -26,7 +27,6 @@ class HashHistory extends History {
     });
   }
 }
-
 
 function ensureSlash() {
   if (window.location.hash) {

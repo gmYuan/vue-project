@@ -16,7 +16,7 @@ export default function install(Vue, options) {
         this._routerRoot = this;
         this._router = this.$options.router;
 
-        this._router.init(this); // 这里的this就是根实例
+        this._router.init(this); // 这里的this就是根实例rootVm
 
         // 如何获取到current属性 将current属性定义在_route上
         Vue.util.defineReactive(this, "_route", this._router.history.current);
@@ -24,10 +24,9 @@ export default function install(Vue, options) {
         // _route是响应式的
         // 当current变化后 更新_route属性
         // 如果current中的path或者matched的其他属性变化 也是响应式的
-
       } else {
         // 组件渲染 是一层层的渲染
-				// 无论是父组件/子组件 都可以通过this._routerRoot._router 获取共同的实例
+        // 无论是父组件/子组件 都可以通过this._routerRoot._router 获取共同的实例
         this._routerRoot = this.$parent && this.$parent._routerRoot;
       }
     },
@@ -36,7 +35,6 @@ export default function install(Vue, options) {
   // 插件一般用于定义全局组件 全局指令 过滤器 原型方法....
   Vue.component("router-link", Link);
   Vue.component("router-view", View);
-
 
   // 代表路由中所有的属性
   Object.defineProperty(Vue.prototype, "$route", {
@@ -50,5 +48,4 @@ export default function install(Vue, options) {
       return this._routerRoot._router; // 方法 push go repace..
     },
   });
-	
 }

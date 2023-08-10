@@ -27,21 +27,16 @@ class VueRouter {
     }
     this.beforeHooks = [];
   }
-  push(to) {
-    this.history.push(to);
-  }
-  go() {}
-  match(location) {
-    return this.matcher.match(location);
-  }
 
   init(app) {
     // 初始化
     // 监听hash值变化 默认跳转到对应的路径中
     const history = this.history;
+    
     const setUpHashListener = () => {
       history.setupListener(); // 监听路由变化 hashchange
     };
+
     // 初始化 会先获得当前hash值 进行跳转, 并且监听hash变化
     history.transitionTo(
       history.getCurrentLocation(), // 获取当前的位置
@@ -57,10 +52,25 @@ class VueRouter {
     // transitionTo  放到base中 做成公共的方法
     // getCurrentLocation // 放到自己家里  window.location.hash / window.location.path
   }
+
+
+  push(to) {
+    this.history.push(to);
+  }
+
+  go() {}
+
+  match(location) {
+    return this.matcher.match(location);
+  }
+
+ 
   beforeEach(fn) {
     this.beforeHooks.push(fn);
   }
 }
+
+
 VueRouter.install = install;
 // 默认vue-router插件导出一个类，用户会new Router({})
 
