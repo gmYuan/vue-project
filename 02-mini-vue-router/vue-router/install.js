@@ -3,49 +3,49 @@ import Link from "./components/link";
 import View from "./components/view";
 
 export default function install(Vue, options) {
-  // 插件安装的入口
-  _Vue = Vue; // 这样别的文件都可以使用Vue变量
+  // 缓存 Vue构造函数, 这样别的文件都可以使用Vue变量 + 用于判断是否已注册过Vue-Router
+  _Vue = Vue; 
 
-  // 给所有组件都混入一个属性 router
   Vue.mixin({
-    // this指向的是当前组件的实例
-    // 把根组件传入的router实例 共享给所有的子组件
+    // 把根组件实例rootVm 共享给所有子组件 + 定义rootVm各个属性
     beforeCreate() {
+      // 说明是根组件实例 rootVm
       if (this.$options.router) {
-        // 我给当前根组件增加一个属性_routerRoot 代表的是他自己
+        // 定义 rootVm._routerRoot = rootVm
         this._routerRoot = this;
+        // 定义 rootVm._router = $options.router
         this._router = this.$options.router;
 
-        this._router.init(this); // 这里的this就是根实例rootVm
+        // 调用 rootRouter.init(rootVm)
+        this._router.init(this)
 
-        // 如何获取到current属性 将current属性定义在_route上
+        // 定义响应式属性 rootVm._route: 
+        // 当rootVm._router.history.current值变化后，会自动更新_route值
         Vue.util.defineReactive(this, "_route", this._router.history.current);
 
-        // _route是响应式的
-        // 当current变化后 更新_route属性
-        // 如果current中的path或者matched的其他属性变化 也是响应式的
       } else {
-        // 组件渲染 是一层层的渲染
-        // 无论是父组件/子组件 都可以通过this._routerRoot._router 获取共同的实例
+         // 子组件: 通过 vm.$parent._routerRoot 获取共同的 rootVm实例
         this._routerRoot = this.$parent && this.$parent._routerRoot;
       }
     },
   });
 
-  // 插件一般用于定义全局组件 全局指令 过滤器 原型方法....
+
+  // 插件一般用于定义全局组件/ 全局指令/ 过滤器/ 原型方法....
   Vue.component("router-link", Link);
   Vue.component("router-view", View);
 
-  // 代表路由中所有的属性
+  // 包含路由中所有属性 path/matched/...
   Object.defineProperty(Vue.prototype, "$route", {
     get() {
-      return this._routerRoot._route; // path  matched
+      return this._routerRoot._route; //
     },
   });
 
+  // 包含路由中所有方法 push/go/...
   Object.defineProperty(Vue.prototype, "$router", {
     get() {
-      return this._routerRoot._router; // 方法 push go repace..
+      return this._routerRoot._router; 
     },
   });
 }

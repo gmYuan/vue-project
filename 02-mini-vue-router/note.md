@@ -57,15 +57,15 @@ A1 import router from "./router" ==>
         - addRoutes方法:  动态添加路由匹配规则==> 原理就是 createRouteMap
         - match方法: 通过 path/loaction来 匹配组件信息(record), 具体实现流程见下文
 
-    - y.2 router.history = new HashHistory / BrowserHistory (router)
-      - baseHistory.Con(router)==>
-        - 存储 router实例
+    - y.2 router.history = new HashHistory / BrowserHistory (vmRouter)
+      - baseHistory.Con(vmRouter)==>
+        - 存储 vmRouter实例
         - 初始化 router.current值==> createRoute(null, { path: "/" })
           - 返回嵌套路径 对应的多个 路由信息对象 {...loaction, matched: [recodeP, record] }
 
       - ensureSlash(): 确保hash模式下 有一个/根路径
 
-    - y.3 定义 roter.beforeHooks = []
+    - y.3 定义 router.beforeHooks = []
 
   // src/router.js ==>
   - A4 [可选的] 注册了多个 router.beforeEach(fn)路由守卫: roter.beforeHooks.push(fn)

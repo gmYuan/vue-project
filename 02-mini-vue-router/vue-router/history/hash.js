@@ -14,9 +14,9 @@ class HashHistory extends History {
   }
   
   setupListener() {
+    // 当hash值变化了，就获取到最新的hash值，并通过调用transitionTo() 进行跳转
     window.addEventListener("hashchange", () => {
-      // 当hash值变化了 在次拿到hash值进行跳转
-      this.transitionTo(getHash()); // hash变化在次进行跳转
+      this.transitionTo(getHash()); 
     });
   }
 
@@ -30,7 +30,7 @@ class HashHistory extends History {
 
 function ensureSlash() {
   if (window.location.hash) {
-    // location.hash 是有兼容性问题的
+    // location.hash 是有兼容性问题的，这里只是简单实现
     return;
   }
   window.location.hash = "/"; // 默认就是 / 路径即可

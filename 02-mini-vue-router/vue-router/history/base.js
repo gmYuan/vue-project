@@ -1,7 +1,8 @@
 export function createRoute(record, locationObj) {
-  let res = [];   // [/about /about/a]
+  let res = [];
   if (record) {
     while (record) {
+      // res值表示为: [ '/about', '/about/a' ]
       res.unshift(record);
       record = record.parent;
     }
@@ -26,23 +27,21 @@ function runQueue(queue, iterator, cb) {
 class History {
   constructor(router) {
     this.router = router;
-    // 当我们创建完路由，先有一个默认值 路径 和 匹配到的记录做成一个映射表
+    // matched属性的值: 
     // { '/': Record, "about': Record, "/about/a':record, "/about/b':record }
-    // about/a/ ==> matches :[ Record, Record]
+    // about/a/ ==> matches:[ Record_About, Record_About/A]
 
+    // 当我们创建完路由，会先有一个默认值路径 和 匹配到的记录，做成一个映射表
+    // 默认当创建history时 路径应该是/ 并且匹配到的记录是[]，即
+    // this.current = {path:'/',matched:[]}
 
-    // 默认当创建history时 路径应该是/ 并且匹配到的记录是[]
     this.current = createRoute(null, {
-      // 存放路由状态的
       path: "/",
     });
-    console.log(this.current);
-    // this.current = {path:'/',matched:[]}
   }
 
+  // 跳转时都会调用此方法: 路径变化了: 视图还要刷新 (响应式数据原理)
   transitionTo(locationStr, onComplete) {
-    // 跳转时都会调用此方法 from  to..
-    // 路径变化了 视图还要刷新 ，  响应式的数据原理
     let route = this.router.match(locationStr); // {'/'.matched:[]}
     // 这个route 就是当前最新的匹配到的结果
     if (

@@ -4,18 +4,13 @@ import HashHistory from "./history/hash";
 import BrowserHistory from "./history/history";
 
 class VueRouter {
+  // 创建 router.matcher属性 + 根据不同mode，生成对应类型的router.history对象
   constructor(options) {
-    // 根据用户的配置 和当前请求的路径 渲染对应的组件
 
-    // 创建匹配器 可用用于后续的匹配操作
-    // 用户没有传递配置 就默认传入一个空数组
-    // 1.match通过路由来匹配组件
-    // 2.addRoutes 动态添加匹配规则
-
-    // 给实例添加matcher属性
+    // 创建router.matcher属性:  {match: 通过路由来匹配组件, addRoutes: 动态添加匹配规则}
     this.matcher = createMatcher(options.routes || []);
 
-    // 我需要根据不同的 路径进行切换
+    // 根据不同mode，生成对应类型的router.history对象
     options.mode = options.mode || "hash"; // 默认没有传入就是hash模式
     switch (options.mode) {
       case "hash":
@@ -28,18 +23,19 @@ class VueRouter {
     this.beforeHooks = [];
   }
 
+
   init(app) {
-    // 初始化
-    // 监听hash值变化 默认跳转到对应的路径中
     const history = this.history;
-    
+
+    // 监听路由变化 + 获取到最新hash值 + 进行跳转
     const setUpHashListener = () => {
-      history.setupListener(); // 监听路由变化 hashchange
+      history.setupListener(); 
     };
 
     // 初始化 会先获得当前hash值 进行跳转, 并且监听hash变化
     history.transitionTo(
-      history.getCurrentLocation(), // 获取当前的位置
+      // 获取当前路径的 window.location.hash值 / window.location.path值
+      history.getCurrentLocation(), 
       setUpHashListener
     );
 		
@@ -47,12 +43,7 @@ class VueRouter {
       // 每次路径变化 都会调用此方法  订阅
       app._route = route;
     });
-
-    // setupListener  放到hash里取
-    // transitionTo  放到base中 做成公共的方法
-    // getCurrentLocation // 放到自己家里  window.location.hash / window.location.path
   }
-
 
   push(to) {
     this.history.push(to);
@@ -72,6 +63,7 @@ class VueRouter {
 
 
 VueRouter.install = install;
+
 // 默认vue-router插件导出一个类，用户会new Router({})
 
 export default VueRouter;
