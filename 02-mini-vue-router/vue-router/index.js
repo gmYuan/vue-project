@@ -40,7 +40,7 @@ class VueRouter {
     );
 		
     history.listen((route) => {
-      // 每次路径变化 都会调用此方法  订阅
+      // 每次路径变化 都会调用此方法: 订阅
       app._route = route;
     });
   }

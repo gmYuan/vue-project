@@ -38,13 +38,13 @@ let router = new Router({
 
 
 // 当导航变化时 会依次执行这两个方法
-router.beforeEach((from, to, next) => {
+router.beforeEach((to,from,next) => {
   console.log(1);
   setTimeout(() => {
     next();
   }, 1000);
 });
-router.beforeEach((from, to, next) => {
+router.beforeEach((to,from,next) => {
   console.log(2);
   setTimeout(() => {
     next();

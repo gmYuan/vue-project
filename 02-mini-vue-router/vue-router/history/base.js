@@ -51,10 +51,11 @@ class History {
       // 防止重复跳转
       return;
     }
-    let queue = [].concat(this.router.beforeHooks); // 拿到了注册方法
+    // 拿到了路由守卫钩子
+    let queue = [].concat(this.router.beforeHooks); 
 
     const iterator = (hook, next) => {
-      hook(this.current, route, () => {
+      hook(route, this.current, () => {
         next();
       });
     };
@@ -73,10 +74,9 @@ class History {
   }
 
   updateRoute(route) {
-    // 每次你更新的是current
-    this.current = route; // 每次路由切换都会更改current属性
+    // 每次路由切换都会更改current属性
+    this.current = route; 
     this.cb && this.cb(route); // 发布
-    // 视图重新渲染有几个要求? 1.模板中要用  2.current得是响应式的
   }
 }
 

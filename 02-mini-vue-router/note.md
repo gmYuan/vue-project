@@ -110,20 +110,4 @@ rootRouter.init(rootVm)==>
 
   - x.2 注册监听 更新rootVm._route值为最新route: history.listen(route => app._route = route) 
 
-
-// src/vue-router/components/link.js
-A5 <tag onClick={this.handler.bind(this, to)}>{this.$slots.default}</tag> ==>
-  - vm.handler(to)==> vm.$router.push(to)==> router.push(to)==> 
-    - router.history.push(to)==> 
-      - history.transitionTo(locationStr, () => { window.location.hash = location })
-
-// src/vue-router/components/view.js
-A6 每一处 使用了routerView组件 ==>
-  routerView.render(h, { parent, data })==>
-    - 每一处的 routerView组件都对它进行标记: data.routerView = true
-    - 通过 parent.$vnode && parent.$vnode.data.routerView，识别遇到了的是第几层的 router-view
-    - record = route.matched[depth]: 获取到第N层router-view 对应的 那一个record
-      - 第一层router-view 渲染第一个record; 第二个router-view 渲染第二个
-
-    - 渲染对应组件: h(record.component, data)
 ```
