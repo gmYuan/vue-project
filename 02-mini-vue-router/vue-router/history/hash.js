@@ -22,7 +22,7 @@ class HashHistory extends History {
 
   push(location) {
     this.transitionTo(location, () => {
-      // 去更新hash值，hash值变化后虽然会再次跳转但是 不会重新更新current属性
+      // 去更新hash值
       window.location.hash = location;
     });
   }

@@ -19,8 +19,7 @@ export default function install(Vue, options) {
         // 调用 rootRouter.init(rootVm)
         this._router.init(this)
 
-        // 定义响应式属性 rootVm._route: 
-        // 当rootVm._router.history.current值变化后，会自动更新_route值
+        // 定义响应式属性 rootVm._route，当它发生变化，router-view就会再次执行渲染
         Vue.util.defineReactive(this, "_route", this._router.history.current);
 
       } else {
